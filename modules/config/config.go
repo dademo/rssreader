@@ -15,46 +15,60 @@ type Feed struct {
 }
 
 type DatabaseConfig struct {
-	driver  string
-	connStr string
+	driver             string
+	connStr            string
+	maxOpenConnections uint
+	maxIdleConnexions  uint
+}
+
+type LogConfig struct {
+	level  string
+	output []string
 }
 
 type Config struct {
 	feeds []Feed
 	db    DatabaseConfig
+	log   LogConfig
 }
 
-func ReadConfig(configFilePath string) Config {
+func ReadConfig(configFilePath string) (Config, error) {
 
 	log.Debug(fmt.Sprintf("Reading config [%s]", configFilePath))
 
 	fileContent, err := ioutil.ReadFile(configFilePath)
-	check(err, "Unable to read the configuration file")
+	if err != nil {
+		log.Error("Unable to read the configuration file")
+		return Config{}, err
+	}
 
 	parsed := Config{}
 	err = yaml.Unmarshal(fileContent, &parsed)
-	check(err, "Unable to unmarshall configuration")
+	if err != nil {
+		log.Error("Unable to unmarshall configuration")
+		return Config{}, err
+	}
 
 	log.Debug("Configuration have been read")
 
-	return parsed
+	return parsed, nil
 }
 
-func SaveConfig(config Config, configFilePath string) {
+func SaveConfig(config Config, configFilePath string) error {
 
 	log.Debug("Marshalling configuration")
 
 	marshalled, err := yaml.Marshal(config)
-
-	check(err, "Unable to marshall the configuration")
+	if err != nil {
+		log.Fatal("Unable to marshall the configuration")
+		return err
+	}
 
 	err = ioutil.WriteFile(configFilePath, marshalled, 0644)
-
-	check(err, "Unable to write the configuration")
-}
-
-func check(err error, msg string) {
 	if err != nil {
-		log.Fatal(msg, ", ", err)
+		log.Fatal("Unable to write the configuration")
+		return err
 	}
+
+	return nil
 }

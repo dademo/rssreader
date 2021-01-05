@@ -1,11 +1,7 @@
 package cmd
 
 import (
-	"fmt"
-	"io"
-	"os"
-
-	log "github.com/sirupsen/logrus"
+	"github.com/dademo/rssreader/modules/log"
 	"github.com/urfave/cli"
 )
 
@@ -22,27 +18,18 @@ var FlagLogFile = cli.StringFlag{
 	Required: false,
 }
 
-func SetLogByContext(context *cli.Context) {
+func SetLogByContext(context *cli.Context) error {
 
 	logLevelStr := context.GlobalString("log-level")
 
 	if logLevelStr != "" {
-		logLevel, err := log.ParseLevel(logLevelStr)
-		if err != nil {
-			log.Fatal("Unable to parse log level", err)
-		} else {
-			log.SetLevel(logLevel)
-		}
+		log.SetLogLevel(logLevelStr)
 	}
 
 	logFileStr := context.GlobalString("log-file")
 
 	if logFileStr != "" {
-		file, err := os.OpenFile(logFileStr, os.O_RDWR|os.O_APPEND|os.O_CREATE, 0644)
-		if err != nil {
-			log.Fatal(fmt.Sprintf("Unable to open file [%s]", logFileStr), err)
-		} else {
-			log.SetOutput(io.MultiWriter(os.Stderr, file))
-		}
+		return log.SetLogOutputStreams("stderr", logFileStr)
 	}
+	return nil
 }

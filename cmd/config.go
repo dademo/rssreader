@@ -5,6 +5,7 @@ import (
 
 	"github.com/dademo/rssreader/modules/config"
 
+	log "github.com/sirupsen/logrus"
 	"github.com/urfave/cli"
 )
 
@@ -24,7 +25,12 @@ var CmdConfig = cli.Command{
 
 func check(context *cli.Context) error {
 	SetLogByContext(context)
-	_ = config.ReadConfig(context.GlobalString("config"))
-	fmt.Println("Your configuration is correct")
-	return nil
+	_, err := config.ReadConfig(context.GlobalString("config"))
+	if err != nil {
+		log.Fatal("Unable to parse configuration")
+		return err
+	} else {
+		fmt.Println("Your configuration is correct")
+		return nil
+	}
 }
