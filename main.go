@@ -5,7 +5,9 @@ import (
 	"sort"
 
 	"github.com/dademo/rssreader/cmd"
+	"github.com/dademo/rssreader/modules/database"
 
+	appLog "github.com/dademo/rssreader/modules/log"
 	log "github.com/sirupsen/logrus"
 	"github.com/urfave/cli"
 
@@ -33,6 +35,7 @@ func main() {
 	}
 
 	app.Commands = []cli.Command{
+		cmd.CmdRun,
 		cmd.CmdConfig,
 	}
 
@@ -41,6 +44,12 @@ func main() {
 
 	err := app.Run(os.Args)
 	if err != nil {
-		log.Fatal(err)
+		log.Error(err)
 	}
+	cleanup()
+}
+
+func cleanup() {
+	database.Cleanup()
+	appLog.Cleanup()
 }

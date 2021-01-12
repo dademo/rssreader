@@ -9,13 +9,16 @@ import (
 )
 
 var (
-	specialValues = map[string]io.Writer{
+	specialValues = map[string]io.WriteCloser{
 		"stdout": os.Stdout,
 		"stderr": os.Stderr,
 	}
+	openedStreams []io.WriteCloser
 )
 
 func SetLogOutputStreams(streamStrs ...string) error {
+
+	cleanOpenedStreams()
 
 	streams := make([]io.Writer, 0, len(streamStrs))
 
@@ -49,11 +52,36 @@ func SetLogLevel(logLevelStr string) error {
 	}
 }
 
-func openStream(streamStr string) (io.Writer, error) {
+func Cleanup() {
+	cleanOpenedStreams()
+}
+
+func cleanOpenedStreams() {
+
+	log.Debug("Closing opened streams")
+
+	for _, stream := range openedStreams {
+
+		if stream != os.Stderr && stream != os.Stdout {
+
+			err := stream.Close()
+
+			if err != nil {
+				log.Error()
+			}
+		}
+	}
+}
+
+func openStream(streamStr string) (io.WriteCloser, error) {
 
 	if val, ok := specialValues[streamStr]; ok {
 		return val, nil
 	} else {
-		return os.OpenFile(streamStr, os.O_RDWR|os.O_APPEND|os.O_CREATE, 0644)
+		stream, err := os.OpenFile(streamStr, os.O_RDWR|os.O_APPEND|os.O_CREATE, 0644)
+		if err == nil {
+			openedStreams = append(openedStreams, stream)
+		}
+		return stream, err
 	}
 }

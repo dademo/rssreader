@@ -8,13 +8,13 @@ import (
 var FlagLogLevel = cli.StringFlag{
 	Name:     "log-level, l",
 	Value:    "info",
-	Usage:    "config file name",
+	Usage:    "log level",
 	Required: false,
 }
 
 var FlagLogFile = cli.StringFlag{
 	Name:     "log-file",
-	Usage:    "config file name",
+	Usage:    "file where to write logs",
 	Required: false,
 }
 

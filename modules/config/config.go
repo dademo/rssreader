@@ -9,27 +9,27 @@ import (
 )
 
 type Feed struct {
-	name                 string
-	url                  string
-	fetchIntervalMinutes uint
+	Name                 string `yaml:"name"`
+	Url                  string `yaml:"url"`
+	FetchIntervalMinutes uint   `yaml:"fetchIntervalMinutes"`
 }
 
 type DatabaseConfig struct {
-	driver             string
-	connStr            string
-	maxOpenConnections uint
-	maxIdleConnexions  uint
+	Driver             string `yaml:"driver"`
+	ConnStr            string `yaml:"connStr"`
+	MaxOpenConnections uint   `yaml:"maxOpenConnections"`
+	MaxIdleConnexions  uint   `yaml:"maxIdleConnexions"`
 }
 
 type LogConfig struct {
-	level  string
-	output []string
+	Level  string   `yaml:"level"`
+	Output []string `yaml:"output"`
 }
 
 type Config struct {
-	feeds []Feed
-	db    DatabaseConfig
-	log   LogConfig
+	Feeds     []Feed         `yaml:"feeds"`
+	DbConfig  DatabaseConfig `yaml:"database"`
+	LogConfig LogConfig      `yaml:"log"`
 }
 
 func ReadConfig(configFilePath string) (Config, error) {
@@ -60,13 +60,13 @@ func SaveConfig(config Config, configFilePath string) error {
 
 	marshalled, err := yaml.Marshal(config)
 	if err != nil {
-		log.Fatal("Unable to marshall the configuration")
+		log.Error("Unable to marshall the configuration")
 		return err
 	}
 
 	err = ioutil.WriteFile(configFilePath, marshalled, 0644)
 	if err != nil {
-		log.Fatal("Unable to write the configuration")
+		log.Error("Unable to write the configuration")
 		return err
 	}
 
