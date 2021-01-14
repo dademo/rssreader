@@ -120,6 +120,7 @@ func tickerRunner(scheduledJob ScheduledJob) {
 		case newDuration := <-scheduledJob.jobControl.reset:
 			ticker.Reset(newDuration)
 		case <-scheduledJob.jobControl.quit:
+			ticker.Stop()
 			scheduledJob.jobControl.lock.Lock()
 			return
 		}

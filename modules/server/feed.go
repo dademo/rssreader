@@ -1,18 +1,19 @@
-package scheduler
+package server
 
 import (
 	"github.com/dademo/rssreader/modules/config"
 	"github.com/dademo/rssreader/modules/feed"
+	"github.com/dademo/rssreader/modules/scheduler"
 )
 
 type scheduledFeedReaderJob struct {
 	Feed config.Feed
 }
 
-func ScheduleFromConfig(scheduler *Scheduler, config config.Config) {
+func ScheduleFromConfig(jobScheduler *scheduler.Scheduler, config config.Config) {
 
 	for _, feed := range config.Feeds {
-		scheduler.Schedule(ScheduledJob{
+		jobScheduler.Schedule(scheduler.ScheduledJob{
 			Job: scheduledFeedReaderJob{
 				Feed: feed,
 			},

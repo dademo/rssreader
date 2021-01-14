@@ -33,6 +33,8 @@ type DatabaseEntity interface {
 	Refresh() error
 }
 
+type PrimaryKey = uint64
+
 func ConnectDB(dbConfig config.DatabaseConfig) error {
 
 	var err error
@@ -123,4 +125,36 @@ func normalizedSql(sql string) (string, error) {
 	}
 
 	return buffer.String(), nil
+}
+
+func nilIfZero(value PrimaryKey) interface{} {
+	if value == 0 {
+		return nil
+	} else {
+		return value
+	}
+}
+
+func sqlExec(statement *sql.Stmt, args ...interface{}) (int64, error) {
+
+	result, err := statement.Exec(args...)
+	if err != nil {
+		log.Debug("An error occured while running a statement")
+		return 0, err
+	}
+
+	rowsAffected, err := result.RowsAffected()
+	if err != nil {
+		log.Debug("Unable to get affected rows count")
+	} else {
+		log.Debug(fmt.Sprintf("%d rows affected", rowsAffected))
+	}
+
+	_id, err := result.LastInsertId()
+	if err != nil {
+		log.Debug(fmt.Sprintf("An error occured while getting the last inserted Id"))
+		return 0, err
+	} else {
+		return _id, nil
+	}
 }
