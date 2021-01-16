@@ -1,22 +1,21 @@
 package cmd
 
 import (
-	"fmt"
-
 	"github.com/dademo/rssreader/modules/database"
-	"github.com/dademo/rssreader/modules/feed"
+	"github.com/dademo/rssreader/modules/scheduler"
+	"github.com/dademo/rssreader/modules/server"
 
 	log "github.com/sirupsen/logrus"
 	"github.com/urfave/cli"
 )
 
-var CmdRun = cli.Command{
-	Name:      "run",
-	ShortName: "r",
-	Action:    run,
+var CmdServe = cli.Command{
+	Name:      "serve",
+	ShortName: "s",
+	Action:    serve,
 }
 
-func run(context *cli.Context) error {
+func serve(context *cli.Context) error {
 
 	SetLogByContext(context)
 
@@ -41,21 +40,8 @@ func run(context *cli.Context) error {
 		return err
 	}
 
-	fetchedFeeds, err := feed.FetchAll(appConfig)
-	if err != nil {
-		log.Error("Unable to fetch feeds")
-		return err
-	}
-
-	for _, fetchedFeed := range fetchedFeeds {
-		err = fetchedFeed.Save()
-		if err != nil {
-			log.Debug(fmt.Sprintf("An error occured while saving feed [%s]", fetchedFeed.Title))
-			return err
-		}
-	}
-
-	log.Info("Feeds saved")
+	jobScheduler := scheduler.New()
+	server.ScheduleFromConfig(jobScheduler, appConfig)
 
 	return nil
 }

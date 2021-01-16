@@ -1,9 +1,13 @@
 package server
 
 import (
+	"fmt"
+
 	"github.com/dademo/rssreader/modules/config"
 	"github.com/dademo/rssreader/modules/feed"
 	"github.com/dademo/rssreader/modules/scheduler"
+
+	log "github.com/sirupsen/logrus"
 )
 
 type scheduledFeedReaderJob struct {
@@ -22,5 +26,15 @@ func ScheduleFromConfig(jobScheduler *scheduler.Scheduler, config config.Config)
 }
 
 func (scheduledFeedReaderJob scheduledFeedReaderJob) Run() {
-	feed.Fetch(scheduledFeedReaderJob.Feed) // TODO -> Save into the database
+
+	fetchedFeed, err := feed.Fetch(scheduledFeedReaderJob.Feed)
+	if err != nil {
+		log.Error(fmt.Sprintf("Unable to fetch feed [%s]", scheduledFeedReaderJob.Feed.Name), err)
+		return
+	}
+
+	err = fetchedFeed.Save()
+	if err != nil {
+		log.Error("Unable to persist values", err)
+	}
 }

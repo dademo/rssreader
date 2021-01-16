@@ -37,6 +37,7 @@ func main() {
 	app.Commands = []cli.Command{
 		cmd.CmdRun,
 		cmd.CmdConfig,
+		cmd.CmdServe,
 	}
 
 	sort.Sort(cli.FlagsByName(app.Flags))

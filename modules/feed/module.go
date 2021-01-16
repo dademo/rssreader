@@ -4,17 +4,17 @@ import (
 	"fmt"
 
 	"github.com/dademo/rssreader/modules/config"
-	"github.com/dademo/rssreader/modules/database"
-	"github.com/mmcdole/gofeed"
+	databaseFeed "github.com/dademo/rssreader/modules/database/feed"
 
+	"github.com/mmcdole/gofeed"
 	log "github.com/sirupsen/logrus"
 )
 
-func FetchAll(config config.Config) ([]*database.Feed, error) {
+func FetchAll(config config.Config) ([]*databaseFeed.Feed, error) {
 
 	log.Debug("Fetching all feeds")
 
-	feeds := make([]*database.Feed, len(config.Feeds))
+	feeds := make([]*databaseFeed.Feed, 0, len(config.Feeds))
 
 	for _, feed := range config.Feeds {
 		fetchedFeed, err := Fetch(feed)
@@ -29,7 +29,7 @@ func FetchAll(config config.Config) ([]*database.Feed, error) {
 	return feeds, nil
 }
 
-func Fetch(feedConfig config.Feed) (*database.Feed, error) {
+func Fetch(feedConfig config.Feed) (*databaseFeed.Feed, error) {
 
 	log.Debug(fmt.Sprintf("Fetching feed [%s]", feedConfig.Name))
 
@@ -41,5 +41,5 @@ func Fetch(feedConfig config.Feed) (*database.Feed, error) {
 		return nil, err
 	}
 
-	return database.FromFeed(feed), nil
+	return databaseFeed.FromFeed(feed), nil
 }

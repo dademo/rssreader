@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"io"
 	"os"
+	"runtime/debug"
 
 	log "github.com/sirupsen/logrus"
 )
@@ -71,6 +72,11 @@ func cleanOpenedStreams() {
 			}
 		}
 	}
+}
+
+func DebugError(args ...interface{}) {
+	args = append(args, string(debug.Stack()))
+	log.Debug(args...)
 }
 
 func openStream(streamStr string) (io.WriteCloser, error) {

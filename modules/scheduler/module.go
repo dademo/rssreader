@@ -14,7 +14,7 @@ import (
 
 type Scheduler struct {
 	scheduledJobs []ScheduledJob
-	wait          sync.WaitGroup
+	waitGroup     sync.WaitGroup
 }
 
 type Job interface {
@@ -24,7 +24,7 @@ type Job interface {
 type ScheduledJob struct {
 	Job                      Job
 	TickDurationMilliseconds time.Duration
-	jobControl               *jobControl
+	jobControl               jobControl
 }
 
 type jobControl struct {
@@ -41,16 +41,13 @@ type defaultJob struct {
 func New() *Scheduler {
 	return &Scheduler{
 		scheduledJobs: make([]ScheduledJob, 0),
-		wait:          sync.WaitGroup{},
+		waitGroup:     sync.WaitGroup{},
 	}
 }
 
 func (scheduler *Scheduler) Schedule(scheduledJob ScheduledJob) {
+	scheduledJob.jobControl.waitGroup = &scheduler.waitGroup
 	scheduler.scheduledJobs = append(scheduler.scheduledJobs, scheduledJob)
-	// scheduler.AddJob(
-	// 	makeSpec(feedConfig),
-	// 	FeedFetchJob{feedConfig: feedConfig},
-	// )
 }
 
 func (scheduler *Scheduler) Run() {
@@ -61,7 +58,7 @@ func (scheduler *Scheduler) Run() {
 }
 
 func (scheduler *Scheduler) Wait() {
-	scheduler.wait.Wait()
+	scheduler.waitGroup.Wait()
 }
 
 func (job *ScheduledJob) Every(duration time.Duration) *ScheduledJob {
@@ -120,8 +117,8 @@ func tickerRunner(scheduledJob ScheduledJob) {
 		case newDuration := <-scheduledJob.jobControl.reset:
 			ticker.Reset(newDuration)
 		case <-scheduledJob.jobControl.quit:
-			ticker.Stop()
 			scheduledJob.jobControl.lock.Lock()
+			ticker.Stop()
 			return
 		}
 	}
