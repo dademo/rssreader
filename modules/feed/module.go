@@ -4,7 +4,7 @@ import (
 	"fmt"
 
 	"github.com/dademo/rssreader/modules/config"
-	databaseFeed "github.com/dademo/rssreader/modules/database/feed"
+	databaseFeed "github.com/dademo/rssreader/modules/database/dbfeed"
 
 	"github.com/mmcdole/gofeed"
 	log "github.com/sirupsen/logrus"

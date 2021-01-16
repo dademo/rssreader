@@ -1,9 +1,13 @@
 package cmd
 
 import (
+	"net/http"
+
 	"github.com/dademo/rssreader/modules/database"
+	appLog "github.com/dademo/rssreader/modules/log"
 	"github.com/dademo/rssreader/modules/scheduler"
 	"github.com/dademo/rssreader/modules/server"
+	"github.com/dademo/rssreader/modules/web"
 
 	log "github.com/sirupsen/logrus"
 	"github.com/urfave/cli"
@@ -43,5 +47,13 @@ func serve(context *cli.Context) error {
 	jobScheduler := scheduler.New()
 	server.ScheduleFromConfig(jobScheduler, appConfig)
 
-	return nil
+	httpServeMux := http.NewServeMux()
+	err = web.RegisterServerHandlers(httpServeMux, appConfig.HttpConfig)
+
+	if err != nil {
+		appLog.DebugError("Unable to register routes")
+		return err
+	}
+
+	return http.ListenAndServe(appConfig.HttpConfig.ListenAddress, httpServeMux)
 }

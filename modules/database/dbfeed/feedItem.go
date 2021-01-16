@@ -1,4 +1,4 @@
-package feed
+package dbfeed
 
 import (
 	"errors"
@@ -381,8 +381,8 @@ func itemsOfFeed(feed *Feed) ([]*FeedItem, error) {
 
 	allValues := make([]*FeedItem, 0)
 	for rows.Next() {
-		var authorId appDatabase.PrimaryKey
-		var imageId appDatabase.PrimaryKey
+		var authorId, imageId *appDatabase.PrimaryKey
+		var updatedRawValue, publishedRawValue interface{}
 		v := new(FeedItem)
 
 		err = rows.Scan(
@@ -393,8 +393,8 @@ func itemsOfFeed(feed *Feed) ([]*FeedItem, error) {
 			&v.Description,
 			&v.Content,
 			&v.Link,
-			&v.Updated,
-			&v.Published,
+			&updatedRawValue,
+			&publishedRawValue,
 			&v.GUID,
 		)
 		if err != nil {
@@ -402,21 +402,44 @@ func itemsOfFeed(feed *Feed) ([]*FeedItem, error) {
 			return nil, err
 		}
 
-		v.Author, err = authorById(authorId)
+		v.Updated, err = appDatabase.SqlDateParse(updatedRawValue)
 		if err != nil {
-			appLog.DebugError("Unable to fetch feed item author")
+			appLog.DebugError("Unable to parse updated date")
 			return nil, err
 		}
-		v.Image, err = imageById(imageId)
+
+		v.Published, err = appDatabase.SqlDateParse(publishedRawValue)
 		if err != nil {
-			appLog.DebugError("Unable to fetch feed item image")
+			appLog.DebugError("Unable to parse published date")
 			return nil, err
 		}
+
+		if authorId != nil {
+			v.Author, err = authorById(*authorId)
+			if err != nil {
+				appLog.DebugError("Unable to fetch feed item author")
+				return nil, err
+			}
+		} else {
+			v.Author = nil
+		}
+
+		if imageId != nil {
+			v.Image, err = imageById(*imageId)
+			if err != nil {
+				appLog.DebugError("Unable to fetch feed item image")
+				return nil, err
+			}
+		} else {
+			v.Image = nil
+		}
+
 		v.Categories, err = categoriesOfFeedItem(v)
 		if err != nil {
 			appLog.DebugError("Unable to fetch feed item categories")
 			return nil, err
 		}
+
 		v.Enclosures, err = enclosuresOfFeedItem(v)
 		if err != nil {
 			appLog.DebugError("Unable to fetch feed item enclosure")

@@ -261,9 +261,15 @@ func EntityId(e interface{}) interface{} {
 		reflectedFieldId := reflected.Elem().FieldByName(fieldIdName)
 
 		if reflectedFieldId.IsValid() {
+
 			switch reflectedFieldId.Kind() {
 			case reflect.Int, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64:
-				fieldRealValue := reflected.Int()
+				fieldRealValue := reflectedFieldId.Int()
+				if fieldRealValue != 0 {
+					return fieldRealValue
+				}
+			case reflect.Uint, reflect.Uint8, reflect.Uint16, reflect.Uint32, reflect.Uint64:
+				fieldRealValue := reflectedFieldId.Uint()
 				if fieldRealValue != 0 {
 					return fieldRealValue
 				}

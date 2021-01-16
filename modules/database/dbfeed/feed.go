@@ -1,4 +1,4 @@
-package feed
+package dbfeed
 
 import (
 	"fmt"
@@ -201,6 +201,132 @@ func (f *Feed) Save() error {
 	}
 
 	return nil
+}
+
+func GetAllFeeds(withFeedItems bool) ([]*Feed, error) {
+
+	sql := `
+		SELECT
+			id,
+			id_author,
+			id_image,
+			title,
+			description,
+			link,
+			feed_link,
+			updated,
+			published,
+			language,
+			copyright,
+			generator,
+			last_update
+		FROM feed
+	`
+
+	stmt, err := database.Prepare(sql)
+	if err != nil {
+		appLog.DebugError("Unable to prepare SELECT statement")
+		return nil, err
+	}
+	defer appDatabase.DeferStmtCloseFct(stmt)()
+
+	rows, err := stmt.Query()
+	if err != nil {
+		appLog.DebugError("Unable to get result row")
+		return nil, err
+	}
+	if rows.Err() != nil {
+		appLog.DebugError("Unable to get result row")
+		return nil, err
+	}
+	defer appDatabase.DeferRowsCloseFct(rows)()
+
+	allRows := make([]*Feed, 0)
+
+	for rows.Next() {
+		var authorId, imageId *appDatabase.PrimaryKey
+		var updatedRawValue, publishedRawValue, lastUpdateRawValue interface{}
+		v := new(Feed)
+
+		err = rows.Scan(
+			&v.Id,
+			&authorId,
+			&imageId,
+			&v.Title,
+			&v.Description,
+			&v.Link,
+			&v.FeedLink,
+			&updatedRawValue,
+			&publishedRawValue,
+			&v.Language,
+			&v.Copyright,
+			&v.Generator,
+			&lastUpdateRawValue,
+		)
+		if err != nil {
+			appLog.DebugError("Unable to affect results")
+			return nil, err
+		}
+
+		v.Updated, err = appDatabase.SqlDateParse(updatedRawValue)
+		if err != nil {
+			appLog.DebugError("Unable to parse updated date")
+			return nil, err
+		}
+
+		v.Published, err = appDatabase.SqlDateParse(publishedRawValue)
+		if err != nil {
+			appLog.DebugError("Unable to parse published date")
+			return nil, err
+		}
+
+		v.LastUpdate, err = appDatabase.SqlDateParse(lastUpdateRawValue)
+		if err != nil {
+			appLog.DebugError("Unable to parse last update date")
+			return nil, err
+		}
+
+		if authorId != nil {
+			v.Author, err = authorById(*authorId)
+			if err != nil {
+				appLog.DebugError("Unable to fetch feed author")
+				return nil, err
+			}
+		} else {
+			v.Author = nil
+		}
+
+		if imageId != nil {
+			v.Image, err = imageById(*imageId)
+			if err != nil {
+				appLog.DebugError("Unable to fetch feed image")
+				return nil, err
+			}
+		} else {
+			v.Image = nil
+		}
+
+		v.Categories, err = categoriesOfFeed(v)
+		if err != nil {
+			appLog.DebugError("Unable to fetch feed categories")
+			return nil, err
+		}
+
+		if withFeedItems {
+
+			v.Items, err = itemsOfFeed(v)
+			if err != nil {
+				appLog.DebugError("Unable to fetch feeds")
+				return nil, err
+			}
+		} else {
+			v.Items = nil
+		}
+
+		allRows = append(allRows, v)
+	}
+
+	return allRows, nil
 }
 
 func feedByTitle(title string) (*Feed, error) {

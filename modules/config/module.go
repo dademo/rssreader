@@ -26,10 +26,16 @@ type LogConfig struct {
 	Output []string `yaml:"output"`
 }
 
+type HttpConfig struct {
+	ListenAddress  string `yaml:"listenAddress"`
+	StaticFilesDir string `yaml:"staticFilesDir"`
+}
+
 type Config struct {
-	Feeds     []Feed         `yaml:"feeds"`
-	DbConfig  DatabaseConfig `yaml:"database"`
-	LogConfig LogConfig      `yaml:"log"`
+	Feeds      []Feed         `yaml:"feeds"`
+	DbConfig   DatabaseConfig `yaml:"database"`
+	LogConfig  LogConfig      `yaml:"log"`
+	HttpConfig HttpConfig     `yaml:"http"`
 }
 
 func ReadConfig(configFilePath string) (Config, error) {
