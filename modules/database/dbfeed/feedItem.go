@@ -344,6 +344,10 @@ func feedItemByGUID(guid string) (*FeedItem, error) {
 }
 
 func itemsOfFeed(feed *Feed) ([]*FeedItem, error) {
+	return GetFeedItems(feed.Id)
+}
+
+func GetFeedItems(feedId appDatabase.PrimaryKey) ([]*FeedItem, error) {
 
 	sql := `
 		SELECT
@@ -368,7 +372,7 @@ func itemsOfFeed(feed *Feed) ([]*FeedItem, error) {
 	}
 	defer appDatabase.DeferStmtCloseFct(stmt)()
 
-	rows, err := stmt.Query(feed.Id)
+	rows, err := stmt.Query(feedId)
 	if err != nil {
 		appLog.DebugError("Unable to get result row")
 		return nil, err

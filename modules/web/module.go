@@ -25,6 +25,7 @@ var (
 
 const (
 	HTTPParameterTagName         = "httpParameter"
+	HTTPOptionalParameterTagName = "httpOptionalParameter"
 	JSONContentTypeUtf8          = "application/json; charset=utf-8"
 	headerContentType            = "Content-Type"
 	contentTypeMultipartFormData = "multipart/form-data"
@@ -175,6 +176,8 @@ func ParseArgs(arguments interface{}, request *http.Request) error {
 			default:
 				return fmt.Errorf("Unable to fill value of type [%s]", valueField.Type().Name())
 			}
+		} else if _, ok := tag.Lookup(HTTPOptionalParameterTagName); !ok {
+			return fmt.Errorf("Non-optional field [%s] (http parameter '%s') is missing", typeField.Name, urlParameter)
 		}
 	}
 
