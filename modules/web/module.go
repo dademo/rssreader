@@ -10,6 +10,8 @@ import (
 	"reflect"
 	"strconv"
 
+	"github.com/gorilla/mux"
+
 	"github.com/dademo/rssreader/modules/config"
 	appLog "github.com/dademo/rssreader/modules/log"
 )
@@ -24,6 +26,7 @@ var (
 )
 
 const (
+	AppApiPrefix                 = "/api"
 	HTTPParameterTagName         = "httpParameter"
 	HTTPOptionalParameterTagName = "httpOptionalParameter"
 	JSONContentTypeUtf8          = "application/json; charset=utf-8"
@@ -60,13 +63,16 @@ func RegisterServerHandlers(serveMux *http.ServeMux, httpConfig config.HttpConfi
 		}
 	}
 	if !fileInfo.IsDir() {
-		return errors.New(fmt.Sprintf("You must provide a directory as the static files directory [%s]", fileServerDir))
+		return fmt.Errorf("You must provide a directory as the static files directory [%s]", fileServerDir)
 	}
 
+	router := mux.NewRouter()
 	for _, registeredRoute := range registeredRoutes {
-		serveMux.HandleFunc(registeredRoute.pattern, registeredRoute.handler)
+		router.HandleFunc(registeredRoute.pattern, registeredRoute.handler)
 	}
-	serveMux.Handle("/", http.FileServer(dotFileHidingFileSystem{http.Dir(fileServerDir)}))
+
+	router.PathPrefix("/").Handler(http.FileServer(dotFileHidingFileSystem{http.Dir(fileServerDir)}))
+	serveMux.Handle("/", router)
 
 	return nil
 }
@@ -110,6 +116,12 @@ func ParseArgs(arguments interface{}, request *http.Request) error {
 		}
 	}
 
+	requestParameters := mux.Vars(request)
+	/* Mering maps */
+	for k, _ := range request.Form {
+		requestParameters[k] = request.Form.Get(k)
+	}
+
 	reflected := reflect.ValueOf(arguments)
 
 	if reflected.IsNil() {
@@ -138,9 +150,7 @@ func ParseArgs(arguments interface{}, request *http.Request) error {
 			urlParameter = typeField.Name
 		}
 
-		strURLValue := request.Form.Get(urlParameter)
-
-		if strURLValue != "" {
+		if strURLValue, ok := requestParameters[urlParameter]; ok && strURLValue != "" {
 			switch valueField.Type().Kind() {
 			case reflect.Int, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64:
 				if v, err := strconv.ParseInt(strURLValue, 10, 0); err != nil {

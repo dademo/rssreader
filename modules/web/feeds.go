@@ -11,8 +11,8 @@ import (
 
 func init() {
 	RegisterRoutes(
-		RegisteredRoute{pattern: "/api/feeds", handler: getFeeds},
-		RegisteredRoute{pattern: "/api/feedItems", handler: getFeedItems},
+		RegisteredRoute{pattern: "/api/feed", handler: getFeeds},
+		RegisteredRoute{pattern: "/api/feed/{feedId}/items", handler: getFeedItems},
 	)
 }
 
@@ -41,7 +41,7 @@ func getFeeds(responseWriter http.ResponseWriter, request *http.Request) {
 func getFeedItems(responseWriter http.ResponseWriter, request *http.Request) {
 
 	var requestParameters struct {
-		FeedId appDatabase.PrimaryKey `httpParameter:"feed"`
+		FeedId appDatabase.PrimaryKey `httpParameter:"feedId"`
 	}
 	requestParameters.FeedId = 0
 
