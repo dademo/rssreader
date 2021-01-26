@@ -75,7 +75,7 @@ func cleanOpenedStreams() {
 }
 
 func DebugError(args ...interface{}) {
-	args = append(args, string(debug.Stack()))
+	args = append(args, ", ", string(debug.Stack()))
 	log.Debug(args...)
 }
 

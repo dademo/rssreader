@@ -8,8 +8,3 @@ var FlagLog = cli.StringFlag{
 	Required: false,
 	Value:    "info",
 }
-
-var GlobalFlags = []cli.StringFlag{
-	FlagLog,
-	FlagConfig,
-}
