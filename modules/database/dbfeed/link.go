@@ -2,12 +2,9 @@ package dbfeed
 
 import (
 	"errors"
-	"fmt"
 
 	appDatabase "github.com/dademo/rssreader/modules/database"
 	appLog "github.com/dademo/rssreader/modules/log"
-
-	log "github.com/sirupsen/logrus"
 )
 
 func linkFeedCategoryToFeed(category *FeedCategory, feed *Feed) error {
@@ -20,14 +17,18 @@ func linkFeedCategoryToFeed(category *FeedCategory, feed *Feed) error {
 		return errors.New("You must provide a saved feed")
 	}
 
-	sql := `
+	sql, err := appDatabase.NormalizedSql(`
 		SELECT
 			COUNT(*) AS cnt
 		FROM feed_category_feed
 		WHERE 
 			    id_feed_category = ?
 			AND id_feed = ?
-	`
+	`)
+	if err != nil {
+		appLog.DebugError(err)
+		return err
+	}
 
 	stmt, err := database.Prepare(sql)
 	if err != nil {
@@ -51,10 +52,15 @@ func linkFeedCategoryToFeed(category *FeedCategory, feed *Feed) error {
 
 	if cnt == 0 {
 		// Adding value
-		sql = `
+		sql, err = appDatabase.NormalizedSql(`
 			INSERT INTO feed_category_feed(id_feed_category, id_feed)
 			VALUES (?, ?)
-		`
+		`)
+		if err != nil {
+			appLog.DebugError(err)
+			return err
+		}
+
 		stmt, err = database.Prepare(sql)
 		if err != nil {
 			appLog.DebugError("Unable to prepare INSERT statement")
@@ -62,17 +68,13 @@ func linkFeedCategoryToFeed(category *FeedCategory, feed *Feed) error {
 		}
 		defer appDatabase.DeferStmtCloseFct(stmt)()
 
-		countInserted, err := appDatabase.SqlExec(stmt, category.Id, feed.Id)
+		err := appDatabase.SqlExec(stmt, category.Id, feed.Id)
 		if err != nil {
 			appLog.DebugError("An error occured while saving a feed")
 			return err
-		} else {
-			log.Debug(fmt.Sprintf("Inserted %d row", countInserted))
-			return nil
 		}
-	} else {
-		return nil
 	}
+	return nil
 }
 
 func linkFeedCategoryToFeedItem(category *FeedCategory, item *FeedItem) error {
@@ -85,14 +87,18 @@ func linkFeedCategoryToFeedItem(category *FeedCategory, item *FeedItem) error {
 		return errors.New("You must provide a saved feed item")
 	}
 
-	sql := `
+	sql, err := appDatabase.NormalizedSql(`
 		SELECT
 			COUNT(*) AS cnt
 		FROM feed_category_item
 		WHERE 
 			    id_feed_category = ?
 			AND id_feed_item = ?
-	`
+	`)
+	if err != nil {
+		appLog.DebugError(err)
+		return err
+	}
 
 	stmt, err := database.Prepare(sql)
 	if err != nil {
@@ -116,10 +122,15 @@ func linkFeedCategoryToFeedItem(category *FeedCategory, item *FeedItem) error {
 
 	if cnt == 0 {
 		// Adding value
-		sql = `
+		sql, err = appDatabase.NormalizedSql(`
 			INSERT INTO feed_category_item(id_feed_category, id_feed_item)
 			VALUES (?, ?)
-		`
+		`)
+		if err != nil {
+			appLog.DebugError(err)
+			return err
+		}
+
 		stmt, err = database.Prepare(sql)
 		if err != nil {
 			appLog.DebugError("Unable to prepare INSERT statement")
@@ -127,17 +138,13 @@ func linkFeedCategoryToFeedItem(category *FeedCategory, item *FeedItem) error {
 		}
 		defer appDatabase.DeferStmtCloseFct(stmt)()
 
-		countInserted, err := appDatabase.SqlExec(stmt, category.Id, item.Id)
+		err := appDatabase.SqlExec(stmt, category.Id, item.Id)
 		if err != nil {
 			appLog.DebugError("An error occured while saving a feed")
 			return err
-		} else {
-			log.Debug(fmt.Sprintf("Inserted %d row", countInserted))
-			return nil
 		}
-	} else {
-		return nil
 	}
+	return nil
 }
 
 func linkFeedEnclosureToFeedItem(enclosure *FeedEnclosure, item *FeedItem) error {
@@ -150,14 +157,18 @@ func linkFeedEnclosureToFeedItem(enclosure *FeedEnclosure, item *FeedItem) error
 		return errors.New("You must provide a saved feed item")
 	}
 
-	sql := `
+	sql, err := appDatabase.NormalizedSql(`
 		SELECT
 			COUNT(*) AS cnt
 		FROM feed_enclosure_item
 		WHERE 
 			    id_feed_enclosure = ?
 			AND id_feed_item = ?
-	`
+	`)
+	if err != nil {
+		appLog.DebugError(err)
+		return err
+	}
 
 	stmt, err := database.Prepare(sql)
 	if err != nil {
@@ -181,10 +192,15 @@ func linkFeedEnclosureToFeedItem(enclosure *FeedEnclosure, item *FeedItem) error
 
 	if cnt == 0 {
 		// Adding value
-		sql = `
+		sql, err = appDatabase.NormalizedSql(`
 			INSERT INTO feed_enclosure_item(id_feed_enclosure, id_feed_item)
 			VALUES (?, ?)
-		`
+		`)
+		if err != nil {
+			appLog.DebugError(err)
+			return err
+		}
+
 		stmt, err = database.Prepare(sql)
 		if err != nil {
 			appLog.DebugError("Unable to prepare INSERT statement")
@@ -192,15 +208,11 @@ func linkFeedEnclosureToFeedItem(enclosure *FeedEnclosure, item *FeedItem) error
 		}
 		defer appDatabase.DeferStmtCloseFct(stmt)()
 
-		countInserted, err := appDatabase.SqlExec(stmt, enclosure.Id, item.Id)
+		err := appDatabase.SqlExec(stmt, enclosure.Id, item.Id)
 		if err != nil {
 			appLog.DebugError("An error occured while saving a feed")
 			return err
-		} else {
-			log.Debug(fmt.Sprintf("Inserted %d row", countInserted))
-			return nil
 		}
-	} else {
-		return nil
 	}
+	return nil
 }

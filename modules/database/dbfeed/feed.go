@@ -93,12 +93,16 @@ func (f *Feed) Save() error {
 
 		log.Debug("Adding a new feed")
 
-		sql := `
+		sql, err := appDatabase.NormalizedSql(`
 			INSERT INTO feed (id_author, id_image, title, description, link, feed_link, updated, published, language, copyright, generator, last_update)
 			VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-		`
+		`)
+		if err != nil {
+			appLog.DebugError(err)
+			return err
+		}
 
-		stmt, err := database.Prepare(sql)
+		stmt, err := database.Prepare(appDatabase.PrepareExecSQL(sql))
 
 		if err != nil {
 			appLog.DebugError("Unable to create the statement for feed creation")
@@ -106,7 +110,7 @@ func (f *Feed) Save() error {
 		}
 		defer appDatabase.DeferStmtCloseFct(stmt)()
 
-		newId, err := appDatabase.SqlExec(stmt,
+		newId, err := appDatabase.SqlExecGetId(stmt,
 			appDatabase.EntityId(f.Author),
 			appDatabase.EntityId(f.Image),
 			f.Title,
@@ -132,7 +136,7 @@ func (f *Feed) Save() error {
 
 		log.Debug("Updating a feed")
 
-		sql := `
+		sql, err := appDatabase.NormalizedSql(`
 			UPDATE feed SET
 				id_author = ?,
 				id_image = ?,
@@ -147,9 +151,13 @@ func (f *Feed) Save() error {
 				generator = ?,
 				last_update = ?
 			WHERE id = ?
-		`
+		`)
+		if err != nil {
+			appLog.DebugError(err)
+			return err
+		}
 
-		stmt, err := database.Prepare(sql)
+		stmt, err := database.Prepare(appDatabase.PrepareExecSQL(sql))
 
 		if err != nil {
 			appLog.DebugError("Unable to create the statement for feed creation")
@@ -157,7 +165,7 @@ func (f *Feed) Save() error {
 		}
 		defer appDatabase.DeferStmtCloseFct(stmt)()
 
-		_, err = appDatabase.SqlExec(stmt,
+		_, err = appDatabase.SqlExecGetId(stmt,
 			appDatabase.EntityId(f.Author),
 			appDatabase.EntityId(f.Image),
 			f.Title,
@@ -205,7 +213,7 @@ func (f *Feed) Save() error {
 
 func GetAllFeeds(withFeedItems bool) ([]*Feed, error) {
 
-	sql := `
+	sql, err := appDatabase.NormalizedSql(`
 		SELECT
 			id,
 			id_author,
@@ -221,7 +229,11 @@ func GetAllFeeds(withFeedItems bool) ([]*Feed, error) {
 			generator,
 			last_update
 		FROM feed
-	`
+	`)
+	if err != nil {
+		appLog.DebugError(err)
+		return nil, err
+	}
 
 	stmt, err := database.Prepare(sql)
 	if err != nil {
@@ -331,7 +343,7 @@ func GetAllFeeds(withFeedItems bool) ([]*Feed, error) {
 
 func feedByTitle(title string) (*Feed, error) {
 
-	sql := `
+	sql, err := appDatabase.NormalizedSql(`
 		SELECT
 			id,
 			id_author,
@@ -348,7 +360,11 @@ func feedByTitle(title string) (*Feed, error) {
 			last_update
 		FROM feed
 		WHERE title = ?
-	`
+	`)
+	if err != nil {
+		appLog.DebugError(err)
+		return nil, err
+	}
 
 	stmt, err := database.Prepare(sql)
 	if err != nil {

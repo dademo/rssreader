@@ -58,12 +58,16 @@ func (f *FeedEnclosure) Save() error {
 
 			log.Debug("Adding a new feed enclosure")
 
-			sql := `
-			INSERT INTO feed_enclosure (url, length, type)
-			VALUES (?, ?, ?)
-		`
+			sql, err := appDatabase.NormalizedSql(`
+				INSERT INTO feed_enclosure (url, length, type)
+				VALUES (?, ?, ?)
+			`)
+			if err != nil {
+				appLog.DebugError(err)
+				return err
+			}
 
-			stmt, err := database.Prepare(sql)
+			stmt, err := database.Prepare(appDatabase.PrepareExecSQL(sql))
 
 			if err != nil {
 				appLog.DebugError("Unable to create the statement for feed enclosure update")
@@ -71,7 +75,7 @@ func (f *FeedEnclosure) Save() error {
 			}
 			defer appDatabase.DeferStmtCloseFct(stmt)()
 
-			newId, err := appDatabase.SqlExec(stmt,
+			newId, err := appDatabase.SqlExecGetId(stmt,
 				f.URL,
 				f.Length,
 				f.Type,
@@ -89,15 +93,19 @@ func (f *FeedEnclosure) Save() error {
 
 		log.Debug("Updating a feed enclosure")
 
-		sql := `
+		sql, err := appDatabase.NormalizedSql(`
 			UPDATE feed_enclosure SET
 				url = ?,
 				length = ?,
 				type = ?
 			WHERE id = ?
-		`
+		`)
+		if err != nil {
+			appLog.DebugError(err)
+			return err
+		}
 
-		stmt, err := database.Prepare(sql)
+		stmt, err := database.Prepare(appDatabase.PrepareExecSQL(sql))
 
 		if err != nil {
 			appLog.DebugError("Unable to create the statement for feed enclosure update")
@@ -105,7 +113,7 @@ func (f *FeedEnclosure) Save() error {
 		}
 		defer appDatabase.DeferStmtCloseFct(stmt)()
 
-		_, err = appDatabase.SqlExec(stmt,
+		_, err = appDatabase.SqlExecGetId(stmt,
 			f.URL,
 			f.Length,
 			f.Type,
@@ -123,17 +131,21 @@ func (f *FeedEnclosure) Save() error {
 
 func enclosuresOfFeedItem(feedItem *FeedItem) ([]*FeedEnclosure, error) {
 
-	sql := `
-	SELECT
-		id,
-		url,
-		length,
-		type
-	FROM feed_enclosure
-	INNER JOIN feed_enclosure_item
-		ON feed_enclosure_item.id_feed_enclosure = feed_enclosure.id
-	WHERE id_feed_item = ?
-	`
+	sql, err := appDatabase.NormalizedSql(`
+		SELECT
+			id,
+			url,
+			length,
+			type
+		FROM feed_enclosure
+		INNER JOIN feed_enclosure_item
+			ON feed_enclosure_item.id_feed_enclosure = feed_enclosure.id
+		WHERE id_feed_item = ?
+	`)
+	if err != nil {
+		appLog.DebugError(err)
+		return nil, err
+	}
 
 	stmt, err := database.Prepare(sql)
 	if err != nil {
@@ -170,7 +182,7 @@ func enclosuresOfFeedItem(feedItem *FeedItem) ([]*FeedEnclosure, error) {
 
 func feedEnclosureByUrl(url string) (*FeedEnclosure, error) {
 
-	sql := `
+	sql, err := appDatabase.NormalizedSql(`
 		SELECT
 			id,
 			url,
@@ -178,7 +190,11 @@ func feedEnclosureByUrl(url string) (*FeedEnclosure, error) {
 			type
 		FROM feed_enclosure
 		WHERE url = ?
-	`
+	`)
+	if err != nil {
+		appLog.DebugError(err)
+		return nil, err
+	}
 
 	stmt, err := database.Prepare(sql)
 	if err != nil {

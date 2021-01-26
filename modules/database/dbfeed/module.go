@@ -34,20 +34,6 @@ CREATE TABLE feed_enclosure (
 	type	TEXT
 );
 
-CREATE TABLE feed_item (
-	id				{{.SqlPrimaryKey}},
-	id_feed			INTEGER REFERENCES feed(id),
-	id_author		INTEGER REFERENCES feed_author(id),
-	id_image		INTEGER REFERENCES feed_image(id),
-	title			TEXT,
-	description		TEXT,
-	content			TEXT,
-	link			TEXT,
-	updated			{{.SqlTimestamp}},
-	published		{{.SqlTimestamp}},
-	guid			TEXT
-);
-
 CREATE TABLE feed (
 	id			{{.SqlPrimaryKey}},
 	id_author	INTEGER REFERENCES feed_author(id),
@@ -62,6 +48,20 @@ CREATE TABLE feed (
 	copyright	TEXT,
 	generator	TEXT,
 	last_update	{{.SqlTimestamp}}
+);
+
+CREATE TABLE feed_item (
+	id				{{.SqlPrimaryKey}},
+	id_feed			INTEGER REFERENCES feed(id),
+	id_author		INTEGER REFERENCES feed_author(id),
+	id_image		INTEGER REFERENCES feed_image(id),
+	title			TEXT,
+	description		TEXT,
+	content			TEXT,
+	link			TEXT,
+	updated			{{.SqlTimestamp}},
+	published		{{.SqlTimestamp}},
+	guid			TEXT
 );
 
 CREATE TABLE feed_category_feed (

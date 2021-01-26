@@ -49,12 +49,16 @@ func (f *FeedCategory) Save() error {
 
 			log.Debug("Adding a new feed category")
 
-			sql := `
-			INSERT INTO feed_category (category)
-			VALUES (?)
-		`
+			sql, err := appDatabase.NormalizedSql(`
+				INSERT INTO feed_category (category)
+				VALUES (?)
+			`)
+			if err != nil {
+				appLog.DebugError(err)
+				return err
+			}
 
-			stmt, err := database.Prepare(sql)
+			stmt, err := database.Prepare(appDatabase.PrepareExecSQL(sql))
 
 			if err != nil {
 				appLog.DebugError("Unable to create the statement for feed category update")
@@ -62,7 +66,7 @@ func (f *FeedCategory) Save() error {
 			}
 			defer appDatabase.DeferStmtCloseFct(stmt)()
 
-			newId, err := appDatabase.SqlExec(stmt,
+			newId, err := appDatabase.SqlExecGetId(stmt,
 				f.Category,
 			)
 
@@ -79,13 +83,17 @@ func (f *FeedCategory) Save() error {
 
 		log.Debug("Updating a feed category")
 
-		sql := `
+		sql, err := appDatabase.NormalizedSql(`
 			UPDATE feed_category SET
 				category = ?
 			WHERE id = ?
-		`
+		`)
+		if err != nil {
+			appLog.DebugError(err)
+			return err
+		}
 
-		stmt, err := database.Prepare(sql)
+		stmt, err := database.Prepare(appDatabase.PrepareExecSQL(sql))
 
 		if err != nil {
 			appLog.DebugError("Unable to create the statement for feed category update")
@@ -93,7 +101,7 @@ func (f *FeedCategory) Save() error {
 		}
 		defer appDatabase.DeferStmtCloseFct(stmt)()
 
-		_, err = appDatabase.SqlExec(stmt,
+		_, err = appDatabase.SqlExecGetId(stmt,
 			f.Category,
 			f.Id,
 		)
@@ -109,13 +117,17 @@ func (f *FeedCategory) Save() error {
 
 func feedCategoryByCategory(category string) (*FeedCategory, error) {
 
-	sql := `
+	sql, err := appDatabase.NormalizedSql(`
 		SELECT
 			id,
 			category
 		FROM feed_category
 		WHERE category = ?
-	`
+	`)
+	if err != nil {
+		appLog.DebugError(err)
+		return nil, err
+	}
 
 	stmt, err := database.Prepare(sql)
 	if err != nil {
@@ -152,15 +164,19 @@ func feedCategoryByCategory(category string) (*FeedCategory, error) {
 
 func categoriesOfFeedItem(feedItem *FeedItem) ([]*FeedCategory, error) {
 
-	sql := `
-	SELECT
-		id,
-		category
-	FROM feed_category
-	INNER JOIN feed_category_item
-		ON feed_category_item.id_feed_category = feed_category.id
-	WHERE id_feed_item = ?
-	`
+	sql, err := appDatabase.NormalizedSql(`
+		SELECT
+			id,
+			category
+		FROM feed_category
+		INNER JOIN feed_category_item
+			ON feed_category_item.id_feed_category = feed_category.id
+		WHERE id_feed_item = ?
+	`)
+	if err != nil {
+		appLog.DebugError(err)
+		return nil, err
+	}
 
 	stmt, err := database.Prepare(sql)
 	if err != nil {
@@ -197,15 +213,19 @@ func categoriesOfFeedItem(feedItem *FeedItem) ([]*FeedCategory, error) {
 
 func categoriesOfFeed(feed *Feed) ([]*FeedCategory, error) {
 
-	sql := `
-	SELECT
-		id,
-		category
-	FROM feed_category
-	INNER JOIN feed_category_feed
-		ON feed_category_feed.id_feed_category = feed_category.id
-	WHERE id_feed = ?
-	`
+	sql, err := appDatabase.NormalizedSql(`
+		SELECT
+			id,
+			category
+		FROM feed_category
+		INNER JOIN feed_category_feed
+			ON feed_category_feed.id_feed_category = feed_category.id
+		WHERE id_feed = ?
+	`)
+	if err != nil {
+		appLog.DebugError(err)
+		return nil, err
+	}
 
 	stmt, err := database.Prepare(sql)
 	if err != nil {

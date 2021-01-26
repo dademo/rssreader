@@ -45,12 +45,16 @@ func (f *FeedAuthor) Save() error {
 
 			log.Debug("Adding a new feed author")
 
-			sql := `
-			INSERT INTO feed_author (name, email)
-			VALUES (?, ?)
-		`
+			sql, err := appDatabase.NormalizedSql(`
+				INSERT INTO feed_author (name, email)
+				VALUES (?, ?)
+			`)
+			if err != nil {
+				appLog.DebugError(err)
+				return err
+			}
 
-			stmt, err := database.Prepare(sql)
+			stmt, err := database.Prepare(appDatabase.PrepareExecSQL(sql))
 
 			if err != nil {
 				appLog.DebugError("Unable to create the statement for feed author update")
@@ -58,7 +62,7 @@ func (f *FeedAuthor) Save() error {
 			}
 			defer appDatabase.DeferStmtCloseFct(stmt)()
 
-			newId, err := appDatabase.SqlExec(stmt,
+			newId, err := appDatabase.SqlExecGetId(stmt,
 				f.Name,
 				f.Email,
 			)
@@ -76,14 +80,18 @@ func (f *FeedAuthor) Save() error {
 
 		log.Debug("Updating a feed author")
 
-		sql := `
+		sql, err := appDatabase.NormalizedSql(`
 			UPDATE feed_author SET
 				name = ?,
 				email = ?
 			WHERE id = ?
-		`
+		`)
+		if err != nil {
+			appLog.DebugError(err)
+			return err
+		}
 
-		stmt, err := database.Prepare(sql)
+		stmt, err := database.Prepare(appDatabase.PrepareExecSQL(sql))
 
 		if err != nil {
 			appLog.DebugError("Unable to create the statement for feed author update")
@@ -91,7 +99,7 @@ func (f *FeedAuthor) Save() error {
 		}
 		defer appDatabase.DeferStmtCloseFct(stmt)()
 
-		_, err = appDatabase.SqlExec(stmt,
+		_, err = appDatabase.SqlExecGetId(stmt,
 			f.Name,
 			f.Email,
 			f.Id,
@@ -108,14 +116,18 @@ func (f *FeedAuthor) Save() error {
 
 func feedAuthorByName(name string) (*FeedAuthor, error) {
 
-	sql := `
+	sql, err := appDatabase.NormalizedSql(`
 		SELECT
 			id,
 			name,
 			email
 		FROM feed_author
 		WHERE name = ?
-	`
+	`)
+	if err != nil {
+		appLog.DebugError(err)
+		return nil, err
+	}
 
 	stmt, err := database.Prepare(sql)
 	if err != nil {
@@ -152,14 +164,18 @@ func feedAuthorByName(name string) (*FeedAuthor, error) {
 
 func authorById(authorId appDatabase.PrimaryKey) (*FeedAuthor, error) {
 
-	sql := `
-	SELECT
-		id,
-		name,
-		email
-	FROM feed_author
-	WHERE id = ?
-	`
+	sql, err := appDatabase.NormalizedSql(`
+		SELECT
+			id,
+			name,
+			email
+		FROM feed_author
+		WHERE id = ?
+	`)
+	if err != nil {
+		appLog.DebugError(err)
+		return nil, err
+	}
 
 	stmt, err := database.Prepare(sql)
 	if err != nil {

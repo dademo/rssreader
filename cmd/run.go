@@ -30,14 +30,14 @@ func run(context *cli.Context) error {
 	err = database.ConnectDB(appConfig.DbConfig)
 
 	if err != nil {
-		log.Error("An error occured when connecting to the database")
+		log.Error("An error occured while connecting to the database")
 		return err
 	}
 
 	err = database.PrepareDatabase()
 
 	if err != nil {
-		log.Error("An error occured when prepairing the database")
+		log.Error("An error occured while prepairing the database")
 		return err
 	}
 

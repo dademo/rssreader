@@ -115,12 +115,16 @@ func (f *FeedItem) Save() error {
 
 		log.Debug("Adding a new feed item")
 
-		sql := `
+		sql, err := appDatabase.NormalizedSql(`
 			INSERT INTO feed_item (id_feed, id_author, id_image, title, description, content, link, updated, published, guid)
 			VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-		`
+		`)
+		if err != nil {
+			appLog.DebugError(err)
+			return err
+		}
 
-		stmt, err := database.Prepare(sql)
+		stmt, err := database.Prepare(appDatabase.PrepareExecSQL(sql))
 
 		if err != nil {
 			appLog.DebugError("Unable to create the statement for feed item creation")
@@ -128,7 +132,7 @@ func (f *FeedItem) Save() error {
 		}
 		defer appDatabase.DeferStmtCloseFct(stmt)()
 
-		newId, err := appDatabase.SqlExec(stmt,
+		newId, err := appDatabase.SqlExecGetId(stmt,
 			appDatabase.EntityId(f.Feed),
 			appDatabase.EntityId(f.Author),
 			appDatabase.EntityId(f.Image),
@@ -152,7 +156,7 @@ func (f *FeedItem) Save() error {
 
 		log.Debug("Updating a feed item")
 
-		sql := `
+		sql, err := appDatabase.NormalizedSql(`
 			UPDATE feed_item SET
 				id_feed = ?,
 				id_author = ?,
@@ -165,9 +169,13 @@ func (f *FeedItem) Save() error {
 				published = ?,
 				guid = ?
 			WHERE id = ?
-		`
+		`)
+		if err != nil {
+			appLog.DebugError(err)
+			return err
+		}
 
-		stmt, err := database.Prepare(sql)
+		stmt, err := database.Prepare(appDatabase.PrepareExecSQL(sql))
 
 		if err != nil {
 			appLog.DebugError("Unable to create the statement for feed item creation")
@@ -175,7 +183,7 @@ func (f *FeedItem) Save() error {
 		}
 		defer appDatabase.DeferStmtCloseFct(stmt)()
 
-		_, err = appDatabase.SqlExec(stmt,
+		_, err = appDatabase.SqlExecGetId(stmt,
 			appDatabase.EntityId(f.Feed),
 			appDatabase.EntityId(f.Author),
 			appDatabase.EntityId(f.Image),
@@ -237,7 +245,7 @@ func (f *FeedItem) Normalize() error {
 
 func feedItemByGUID(guid string) (*FeedItem, error) {
 
-	sql := `
+	sql, err := appDatabase.NormalizedSql(`
 		SELECT
 			id,
 			id_author,
@@ -251,7 +259,11 @@ func feedItemByGUID(guid string) (*FeedItem, error) {
 			guid
 		FROM feed_item
 		WHERE guid = ?
-	`
+	`)
+	if err != nil {
+		appLog.DebugError(err)
+		return nil, err
+	}
 
 	stmt, err := database.Prepare(sql)
 	if err != nil {
@@ -349,7 +361,7 @@ func itemsOfFeed(feed *Feed) ([]*FeedItem, error) {
 
 func GetFeedItems(feedId appDatabase.PrimaryKey) ([]*FeedItem, error) {
 
-	sql := `
+	sql, err := appDatabase.NormalizedSql(`
 		SELECT
 			id,
 			id_author,
@@ -363,7 +375,11 @@ func GetFeedItems(feedId appDatabase.PrimaryKey) ([]*FeedItem, error) {
 			guid
 		FROM feed_item
 		WHERE id_feed = ?
-	`
+	`)
+	if err != nil {
+		appLog.DebugError(err)
+		return nil, err
+	}
 
 	stmt, err := database.Prepare(sql)
 	if err != nil {

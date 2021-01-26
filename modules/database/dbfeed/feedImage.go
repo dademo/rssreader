@@ -44,12 +44,16 @@ func (f *FeedImage) Save() error {
 
 		log.Debug("Adding a new feed image")
 
-		sql := `
+		sql, err := appDatabase.NormalizedSql(`
 			INSERT INTO feed_image (url, title)
 			VALUES (?, ?)
-		`
+		`)
+		if err != nil {
+			appLog.DebugError(err)
+			return err
+		}
 
-		stmt, err := database.Prepare(sql)
+		stmt, err := database.Prepare(appDatabase.PrepareExecSQL(sql))
 
 		if err != nil {
 			appLog.DebugError("Unable to create the statement for feed image update")
@@ -57,7 +61,7 @@ func (f *FeedImage) Save() error {
 		}
 		defer appDatabase.DeferStmtCloseFct(stmt)()
 
-		newId, err := appDatabase.SqlExec(stmt,
+		newId, err := appDatabase.SqlExecGetId(stmt,
 			f.URL,
 			f.Title,
 		)
@@ -74,14 +78,18 @@ func (f *FeedImage) Save() error {
 
 		log.Debug("Updating a feed image")
 
-		sql := `
+		sql, err := appDatabase.NormalizedSql(`
 			UPDATE feed_image SET
 				url = ?,
 				title = ?
 			WHERE id = ?
-		`
+		`)
+		if err != nil {
+			appLog.DebugError(err)
+			return err
+		}
 
-		stmt, err := database.Prepare(sql)
+		stmt, err := database.Prepare(appDatabase.PrepareExecSQL(sql))
 
 		if err != nil {
 			appLog.DebugError("Unable to create the statement for feed image update")
@@ -89,7 +97,7 @@ func (f *FeedImage) Save() error {
 		}
 		defer appDatabase.DeferStmtCloseFct(stmt)()
 
-		_, err = appDatabase.SqlExec(stmt,
+		_, err = appDatabase.SqlExecGetId(stmt,
 			f.URL,
 			f.Title,
 			f.Id,
@@ -106,14 +114,18 @@ func (f *FeedImage) Save() error {
 
 func imageById(imageId appDatabase.PrimaryKey) (*FeedImage, error) {
 
-	sql := `
-	SELECT
-		id,
-		url,
-		title
-	FROM feed_image
-	WHERE id = ?
-	`
+	sql, err := appDatabase.NormalizedSql(`
+		SELECT
+			id,
+			url,
+			title
+		FROM feed_image
+		WHERE id = ?
+	`)
+	if err != nil {
+		appLog.DebugError(err)
+		return nil, err
+	}
 
 	stmt, err := database.Prepare(sql)
 	if err != nil {
@@ -150,14 +162,18 @@ func imageById(imageId appDatabase.PrimaryKey) (*FeedImage, error) {
 
 func imageByUrl(url string) (*FeedImage, error) {
 
-	sql := `
-	SELECT
-		id,
-		url,
-		title
-	FROM feed_image
-	WHERE url = ?
-	`
+	sql, err := appDatabase.NormalizedSql(`
+		SELECT
+			id,
+			url,
+			title
+		FROM feed_image
+		WHERE url = ?
+	`)
+	if err != nil {
+		appLog.DebugError(err)
+		return nil, err
+	}
 
 	stmt, err := database.Prepare(sql)
 	if err != nil {

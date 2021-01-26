@@ -7,6 +7,7 @@ import (
 	"errors"
 	"fmt"
 	"reflect"
+	"strings"
 	"text/template"
 	"time"
 
@@ -54,8 +55,8 @@ var databaseDateTypes = map[string]string{
 	"sqlite":     "TEXT",
 	"sqlite3":    "TEXT",
 	"mysql":      "DATETIME",
-	"postgres":   "TIMESTAMP WITHOUT TIMEZONE",
-	"postgresql": "TIMESTAMP WITHOUT TIMEZONE",
+	"postgres":   "TIMESTAMP WITHOUT TIME ZONE",
+	"postgresql": "TIMESTAMP WITHOUT TIME ZONE",
 }
 
 type DatabaseEntity interface {
@@ -116,28 +117,35 @@ func PrepareDatabase() (err error) {
 		log.Debug("Connection closed")
 	}()
 
+	rollbackFunc := func(tx *sql.Tx) {
+		err := tx.Rollback()
+		if err != nil {
+			appLog.DebugError("An error occured while rollback, ", err)
+		}
+	}
+
 	tx, err := database.Begin()
 	if err != nil {
-		log.Debug("Unable to begin transaction")
+		appLog.DebugError("Unable to begin transaction")
 		return err
 	}
 
 	err = initInformationTables(tx)
 	if err != nil {
-		log.Debug("Unable to initalize system tables")
+		appLog.DebugError("Unable to initalize system tables")
 		return err
 	}
 	err = tx.Commit()
 	if err != nil {
-		log.Debug("Unable to commit transaction")
+		appLog.DebugError("Unable to commit transaction")
 		return err
 	}
 
 	for _, databaseTableCreatorDef := range registeredTableCreatorDefs {
 
-		tx, err = database.Begin()
+		tx, err := database.Begin()
 		if err != nil {
-			log.Debug("Unable to begin transaction")
+			appLog.DebugError("Unable to begin transaction")
 			return err
 		}
 
@@ -145,6 +153,7 @@ func PrepareDatabase() (err error) {
 
 		if err != nil {
 			log.Error("Unable to check for module installation, ", err)
+			defer rollbackFunc(tx)
 			return err
 		}
 
@@ -153,6 +162,7 @@ func PrepareDatabase() (err error) {
 			err = databaseTableCreatorDef.DatabaseModuleTableCreator(tx)
 			if err != nil {
 				log.Error("An error occured while creating some tables, ", err)
+				defer rollbackFunc(tx)
 				return err
 			}
 			log.Debug("Table created")
@@ -168,19 +178,26 @@ func PrepareDatabase() (err error) {
 			)
 			if err != nil {
 				log.Debug("Unable to save the new module status")
+				defer rollbackFunc(tx)
 				return err
 			}
 			log.Debug("Module status saved")
+
 		} else if existingModuleDef != nil && existingModuleDef.Version != databaseTableCreatorDef.Version {
+
 			log.Debug(fmt.Sprintf("Updating tables for mod [%s:%s] from version [%s]", databaseTableCreatorDef.ModuleName, databaseTableCreatorDef.Version, existingModuleDef.Version))
+
 			err = databaseTableCreatorDef.DatabaseModuleTableUpdater(tx, existingModuleDef.Version)
 			if err != nil {
 				log.Error("An error occured while updating some tables, ", err)
+				defer rollbackFunc(tx)
 				return err
 			}
+
 			log.Debug("Table updated")
 
 			log.Debug("Saving the new module status")
+
 			err = saveModuleByName(
 				tx,
 				DatabaseModuleDescption{
@@ -191,15 +208,18 @@ func PrepareDatabase() (err error) {
 			)
 			if err != nil {
 				log.Debug("Unable to save the new module status")
+				defer rollbackFunc(tx)
 				return err
 			}
+
 			log.Debug("Module status saved")
+
 		} else {
 			log.Debug(fmt.Sprintf("Nothing to do for mod [%s:%s]", databaseTableCreatorDef.ModuleName, databaseTableCreatorDef.Version))
 		}
 		err = tx.Commit()
 		if err != nil {
-			log.Debug("Unable to commit transaction")
+			appLog.DebugError("Unable to commit transaction")
 			return err
 		}
 	}
@@ -221,6 +241,7 @@ func RegisterOnDatabaseSet(onDatabaseSetRef DatabaseModuleOnDatabaseSetFct) {
 
 func NormalizedSql(sql string) (string, error) {
 
+	const _PLACEHOLDER = "?"
 	var buffer bytes.Buffer
 
 	log.Debug(fmt.Sprintf("Formatting SQL :\n%s", sql))
@@ -243,7 +264,29 @@ func NormalizedSql(sql string) (string, error) {
 		return "", err
 	}
 
-	return buffer.String(), nil
+	sql = buffer.String()
+
+	switch dbDriver {
+	case "sqlite", "sqlite3", "mysql":
+	default:
+		break
+	case "postgres", "postgresql":
+		for nParam := 1; strings.Contains(sql, _PLACEHOLDER); nParam++ {
+			sql = strings.Replace(sql, _PLACEHOLDER, fmt.Sprintf("$%d", nParam), 1)
+		}
+		break
+	}
+
+	return sql, nil
+}
+
+func PrepareExecSQL(sql string) string {
+	switch dbDriver {
+	case "postgres", "postgresql":
+		return fmt.Sprintf(`%s RETURNING id`, sql)
+	default:
+		return sql
+	}
 }
 
 func EntityId(e interface{}) interface{} {
@@ -279,7 +322,21 @@ func EntityId(e interface{}) interface{} {
 	return nil
 }
 
-func SqlExec(statement *sql.Stmt, args ...interface{}) (int64, error) {
+func SqlExec(statement *sql.Stmt, args ...interface{}) error {
+	_, err := sqlExecCommonDriver(statement, false, args...)
+	return err
+}
+
+func SqlExecGetId(statement *sql.Stmt, args ...interface{}) (int64, error) {
+	switch dbDriver {
+	case "postgres", "postgresql":
+		return sqlExecPostgresql(statement, args...)
+	default:
+		return sqlExecCommonDriver(statement, true, args...)
+	}
+}
+
+func sqlExecCommonDriver(statement *sql.Stmt, fetchId bool, args ...interface{}) (int64, error) {
 
 	result, err := statement.Exec(args...)
 	if err != nil {
@@ -294,9 +351,42 @@ func SqlExec(statement *sql.Stmt, args ...interface{}) (int64, error) {
 		log.Debug(fmt.Sprintf("%d rows affected", rowsAffected))
 	}
 
-	_id, err := result.LastInsertId()
+	if fetchId {
+		_id, err := result.LastInsertId()
+		if err != nil {
+			appLog.DebugError(fmt.Sprintf("An error occured while getting the last inserted Id"), err)
+			return 0, err
+		} else {
+			return _id, nil
+		}
+	} else {
+		return 0, nil
+	}
+}
+
+func sqlExecPostgresql(statement *sql.Stmt, args ...interface{}) (int64, error) {
+
+	rows, err := statement.Query(args...)
 	if err != nil {
-		log.Debug(fmt.Sprintf("An error occured while getting the last inserted Id"))
+		log.Debug("An error occured while running a statement")
+		return 0, err
+	}
+
+	defer func() {
+		err := rows.Close()
+		if err != nil {
+			appLog.DebugError("Unable to close rows")
+		}
+	}()
+
+	var _id int64
+	if !rows.Next() {
+		appLog.DebugError("Unable to fetch result rows, probaby due to missing RETURNING statement")
+		return 0, errors.New("Unable to fetch result rows, probaby due to missing RETURNING statement")
+	}
+	rows.Scan(&_id)
+	if err != nil {
+		appLog.DebugError(fmt.Sprintf("An error occured while fetching id"))
 		return 0, err
 	} else {
 		return _id, nil
@@ -337,20 +427,18 @@ func SqlDateParse(value interface{}) (*time.Time, error) {
 
 func initInformationTables(connection *sql.Tx) error {
 
-	sql := `
+	log.Debug("Creating system tables")
+
+	sql, err := NormalizedSql(`
 		CREATE TABLE IF NOT EXISTS system_information_table (
-			id 			{{.SqlPrimaryKey}},
+			id			{{.SqlPrimaryKey}},
 			module 		TEXT NOT NULL UNIQUE,
 			version 	TEXT NOT NULL,
 			last_update	{{.SqlTimestamp}}
 		);
-	`
-
-	log.Debug("Creating system tables")
-
-	sql, err := NormalizedSql(sql)
-
+	`)
 	if err != nil {
+		appLog.DebugError(err)
 		return err
 	}
 
@@ -369,13 +457,17 @@ func initInformationTables(connection *sql.Tx) error {
 
 func fetchModuleByName(tx *sql.Tx, moduleName string) (*DatabaseModuleDescption, error) {
 
-	sql := `
+	sql, err := NormalizedSql(`
 		SELECT
 			module,
 			version
 		FROM system_information_table
 		WHERE module = ?
-	`
+	`)
+	if err != nil {
+		appLog.DebugError(err)
+		return nil, err
+	}
 	v := new(DatabaseModuleDescption)
 
 	stmt, err := tx.Prepare(sql)
@@ -412,28 +504,37 @@ func fetchModuleByName(tx *sql.Tx, moduleName string) (*DatabaseModuleDescption,
 func saveModuleByName(tx *sql.Tx, databaseModuleDescription DatabaseModuleDescption, update bool) error {
 
 	var sql string
+	var err error
 	if update {
-		sql = `
+		sql, err = NormalizedSql(`
 			UPDATE system_information_table SET
 				version = ?,
 				last_update = ?
 			WHERE module = ?
-		`
+		`)
+		if err != nil {
+			appLog.DebugError(err)
+			return err
+		}
 	} else {
-		sql = `
+		sql, err = NormalizedSql(`
 			INSERT INTO system_information_table(version, last_update, module)
 			VALUES (?, ?, ?)
-		`
+		`)
+		if err != nil {
+			appLog.DebugError(err)
+			return err
+		}
 	}
 
-	stmt, err := tx.Prepare(sql)
+	stmt, err := tx.Prepare(PrepareExecSQL(sql))
 	if err != nil {
 		log.Debug("Unable to create the statement for database version creation or update")
 		return err
 	}
 	defer stmt.Close()
 
-	_, err = SqlExec(stmt,
+	_, err = SqlExecGetId(stmt,
 		databaseModuleDescription.Version,
 		time.Now(),
 		databaseModuleDescription.ModuleName,
