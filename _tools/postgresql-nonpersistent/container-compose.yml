@@ -1,0 +1,10 @@
+version: 3.0
+services:
+  postgresql:
+    image: postgres:13
+    restart: always
+    environment:
+     POSTGRES_USER: postgres
+     POSTGRES_PASSWORD: postgres
+    ports:
+      - "5432:5432"

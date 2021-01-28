@@ -1,0 +1,21 @@
+version: 3.0
+services:
+  mysql:
+    image: mysql:8
+    restart: always
+    environment:
+      MYSQL_ROOT_PASSWORD: mysql
+      MYSQL_DATABASE: rssreader
+      MYSQL_USER: rssreader
+      MYSQL_PASSWORD: rssreader
+    ports:
+      - "3306:3306"
+  phpmyadmin:
+    image: phpmyadmin/phpmyadmin:4.9
+    environment:
+      PMA_HOST: mysql
+      PMA_PORT: 3306
+      PMA_USER: rssreader
+      PMA_PASSWORD: rssreader
+    ports:
+     - "8080:80"

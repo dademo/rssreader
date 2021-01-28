@@ -69,8 +69,11 @@ type PrimaryKey = uint64
 func ConnectDB(dbConfig config.DatabaseConfig) error {
 
 	var err error
-	log.Debug(fmt.Sprintf("Connecting to the database with driver [%s] with connection string [%s]", dbConfig.Driver, dbConfig.ConnStr))
-	database, err = sql.Open(dbConfig.Driver, dbConfig.ConnStr)
+
+	finalConnStr := makeFinalConnStr(dbConfig)
+	log.Debug(fmt.Sprintf("Connecting to the database with driver [%s] with connection string [%s]", dbConfig.Driver, finalConnStr))
+
+	database, err = sql.Open(dbConfig.Driver, finalConnStr)
 
 	if err != nil {
 		return err
@@ -90,6 +93,7 @@ func ConnectDB(dbConfig config.DatabaseConfig) error {
 
 func Cleanup() {
 
+	log.Debug("Closing database connection")
 	if database != nil {
 		database.Close()
 		database = nil
@@ -432,7 +436,7 @@ func initInformationTables(connection *sql.Tx) error {
 	sql, err := NormalizedSql(`
 		CREATE TABLE IF NOT EXISTS system_information_table (
 			id			{{.SqlPrimaryKey}},
-			module 		TEXT NOT NULL UNIQUE,
+			module 		VARCHAR(200) NOT NULL UNIQUE,
 			version 	TEXT NOT NULL,
 			last_update	{{.SqlTimestamp}}
 		);
@@ -447,7 +451,7 @@ func initInformationTables(connection *sql.Tx) error {
 	_, err = connection.Exec(sql)
 
 	if err != nil {
-		log.Error("Unable to create sytsem tables")
+		log.Error("Unable to create system tables")
 		return err
 	}
 
@@ -537,7 +541,7 @@ func saveModuleByName(tx *sql.Tx, databaseModuleDescription DatabaseModuleDescpt
 	_, err = SqlExecGetId(stmt,
 		databaseModuleDescription.Version,
 		time.Now(),
-		databaseModuleDescription.ModuleName,
+		StrWithMaxLength(databaseModuleDescription.ModuleName, 200),
 	)
 
 	if err != nil {
@@ -563,5 +567,33 @@ func DeferRowsCloseFct(rows *sql.Rows) func() {
 		if err != nil {
 			appLog.DebugError("Unable to close rows, ", err)
 		}
+	}
+}
+
+func StrWithMaxLength(s string, l int) string {
+	if len(s) < l {
+		return s
+	} else {
+		return s[:l]
+	}
+}
+
+func makeFinalConnStr(dbConfig config.DatabaseConfig) string {
+
+	switch dbConfig.Driver {
+	case "mysql":
+		// Adding option [parseTime=true], do dates will be time.Time values
+		var sepChar string
+
+		if strings.LastIndex(dbConfig.ConnStr, "/") > strings.LastIndex(dbConfig.ConnStr, "?") {
+			sepChar = "?"
+		} else {
+			sepChar = "&"
+		}
+
+		return dbConfig.ConnStr + sepChar + "parseTime=true"
+
+	default:
+		return dbConfig.ConnStr
 	}
 }
