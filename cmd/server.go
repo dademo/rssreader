@@ -43,7 +43,9 @@ func serve(context *cli.Context) error {
 		log.Error("An error occured when prepairing the database")
 		return err
 	}
+	log.Debug("Database initialized")
 
+	log.Debug("Prepairing http server")
 	jobScheduler := scheduler.New()
 	server.ScheduleFromConfig(jobScheduler, appConfig)
 
@@ -55,5 +57,8 @@ func serve(context *cli.Context) error {
 		return err
 	}
 
+	web.SetDisplayErrors(appConfig.HttpConfig.DisplayErrors)
+
+	log.Debug("Serving http")
 	return http.ListenAndServe(appConfig.HttpConfig.ListenAddress, httpServeMux)
 }

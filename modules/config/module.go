@@ -29,6 +29,7 @@ type LogConfig struct {
 type HttpConfig struct {
 	ListenAddress  string `yaml:"listenAddress"`
 	StaticFilesDir string `yaml:"staticFilesDir"`
+	DisplayErrors  bool   `yaml:"retrunErrors"`
 }
 
 type Config struct {

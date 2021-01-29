@@ -17,21 +17,23 @@ import (
 )
 
 type RegisteredRoute struct {
-	pattern string
-	handler func(http.ResponseWriter, *http.Request)
+	Pattern string
+	Handler func(http.ResponseWriter, *http.Request)
 }
 
 var (
 	registeredRoutes []RegisteredRoute
+	displayErrors    bool = false
 )
 
 const (
-	AppApiPrefix                 = "/api"
-	HTTPParameterTagName         = "httpParameter"
-	HTTPOptionalParameterTagName = "httpOptionalParameter"
-	JSONContentTypeUtf8          = "application/json; charset=utf-8"
-	headerContentType            = "Content-Type"
-	contentTypeMultipartFormData = "multipart/form-data"
+	AppApiPrefix                     = "/api"
+	HTTPParameterTagName             = "httpParameter"
+	HTTPParameterDefaultValueTagName = "httpParameterDefaultValue"
+	JSONContentTypeUtf8              = "application/json; charset=utf-8"
+	TextPlainUTF8                    = "text/plain; charset=utf-8"
+	headerContentType                = "Content-Type"
+	contentTypeMultipartFormData     = "multipart/form-data"
 )
 
 func RegisterServerHandlers(serveMux *http.ServeMux, httpConfig config.HttpConfig) error {
@@ -68,7 +70,7 @@ func RegisterServerHandlers(serveMux *http.ServeMux, httpConfig config.HttpConfi
 
 	router := mux.NewRouter()
 	for _, registeredRoute := range registeredRoutes {
-		router.HandleFunc(registeredRoute.pattern, registeredRoute.handler)
+		router.HandleFunc(registeredRoute.Pattern, registeredRoute.Handler)
 	}
 
 	router.PathPrefix("/").Handler(http.FileServer(dotFileHidingFileSystem{http.Dir(fileServerDir)}))
@@ -82,7 +84,7 @@ func MarshallWriteJson(responseWriter http.ResponseWriter, value interface{}) {
 	marshalledValue, err := json.Marshal(value)
 	if err != nil {
 		appLog.DebugError("Unable to handle the client request")
-		responseWriter.WriteHeader(http.StatusInternalServerError)
+		AnswerError(err, http.StatusInternalServerError, responseWriter)
 		return
 	}
 
@@ -91,7 +93,7 @@ func MarshallWriteJson(responseWriter http.ResponseWriter, value interface{}) {
 	_, err = responseWriter.Write(marshalledValue)
 	if err != nil {
 		appLog.DebugError("Unable to write answer")
-		responseWriter.WriteHeader(http.StatusInternalServerError)
+		AnswerError(err, http.StatusInternalServerError, responseWriter)
 		return
 	}
 }
@@ -151,45 +153,91 @@ func ParseArgs(arguments interface{}, request *http.Request) error {
 		}
 
 		if strURLValue, ok := requestParameters[urlParameter]; ok && strURLValue != "" {
-			switch valueField.Type().Kind() {
-			case reflect.Int, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64:
-				if v, err := strconv.ParseInt(strURLValue, 10, 0); err != nil {
-					return err
-				} else {
-					valueField.SetInt(v)
-				}
-				break
-			case reflect.Uint, reflect.Uint8, reflect.Uint16, reflect.Uint32, reflect.Uint64:
-				if v, err := strconv.ParseUint(strURLValue, 10, 0); err != nil {
-					return err
-				} else {
-					valueField.SetUint(v)
-				}
-				break
-			case reflect.Float32, reflect.Float64:
-				if v, err := strconv.ParseFloat(strURLValue, 0); err != nil {
-					return err
-				} else {
-					valueField.SetFloat(v)
-				}
-				break
-			case reflect.Bool:
-				if v, err := strconv.ParseBool(strURLValue); err != nil {
-					return err
-				} else {
-					valueField.SetBool(v)
-				}
-				break
-			case reflect.String:
-				valueField.SetString(strURLValue)
-				break
-			default:
-				return fmt.Errorf("Unable to fill value of type [%s]", valueField.Type().Name())
+			err := setFieldValue(valueField, strURLValue)
+			if err != nil {
+				return err
 			}
-		} else if _, ok := tag.Lookup(HTTPOptionalParameterTagName); !ok {
-			return fmt.Errorf("Non-optional field [%s] (http parameter '%s') is missing", typeField.Name, urlParameter)
+		} else if tag, ok := tag.Lookup(HTTPParameterDefaultValueTagName); ok {
+			err := setFieldValue(valueField, tag)
+			if err != nil {
+				return err
+			}
+		} else {
+			return fmt.Errorf("Field [%s] (http parameter '%s') is missing and has no default value", typeField.Name, urlParameter)
 		}
 	}
 
 	return nil
+}
+
+func setFieldValue(valueField reflect.Value, strValue string) error {
+
+	switch valueField.Type().Kind() {
+	case reflect.Int, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64:
+		if v, err := strconv.ParseInt(strValue, 10, 0); err != nil {
+			return err
+		} else {
+			valueField.SetInt(v)
+		}
+		break
+	case reflect.Uint, reflect.Uint8, reflect.Uint16, reflect.Uint32, reflect.Uint64:
+		if v, err := strconv.ParseUint(strValue, 10, 0); err != nil {
+			return err
+		} else {
+			valueField.SetUint(v)
+		}
+		break
+	case reflect.Float32, reflect.Float64:
+		if v, err := strconv.ParseFloat(strValue, 0); err != nil {
+			return err
+		} else {
+			valueField.SetFloat(v)
+		}
+		break
+	case reflect.Bool:
+		if v, err := strconv.ParseBool(strValue); err != nil {
+			return err
+		} else {
+			valueField.SetBool(v)
+		}
+		break
+	case reflect.String:
+		valueField.SetString(strValue)
+		break
+	default:
+		return fmt.Errorf("Unable to fill value of type [%s]", valueField.Type().Name())
+	}
+	return nil
+}
+
+func SetDisplayErrors(v bool) {
+	displayErrors = v
+}
+
+func AnswerError(err error, code int, responseWriter http.ResponseWriter) {
+
+	var msg string
+
+	responseWriter.WriteHeader(code)
+
+	if displayErrors {
+
+		if err != nil {
+			msg = err.Error()
+		} else {
+			msg = "An error occured"
+		}
+
+		responseWriter.Header().Add("Content-Type", TextPlainUTF8)
+
+		_, err = responseWriter.Write([]byte(msg))
+		if err != nil {
+			appLog.DebugError("Unable to write answer")
+			responseWriter.WriteHeader(http.StatusInternalServerError)
+		}
+	}
+}
+
+func DisableClientCache(responseWriter http.ResponseWriter) {
+	responseWriter.Header().Add("Cache-Control", "no-store")
 }

@@ -11,9 +11,13 @@ import (
 	log "github.com/sirupsen/logrus"
 	"github.com/urfave/cli"
 
+	// Database drivers
 	_ "github.com/go-sql-driver/mysql"
 	_ "github.com/lib/pq"
 	_ "github.com/mattn/go-sqlite3"
+
+	// HTTP endpoints
+	_ "github.com/dademo/rssreader/modules/web/feeds"
 )
 
 var (
