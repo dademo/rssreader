@@ -1,7 +1,14 @@
 package cmd
 
 import (
+	"context"
+	"fmt"
 	"net/http"
+	"os"
+	"os/signal"
+	"sync"
+	"syscall"
+	"time"
 
 	"github.com/dademo/rssreader/modules/database"
 	appLog "github.com/dademo/rssreader/modules/log"
@@ -19,11 +26,13 @@ var CmdServe = cli.Command{
 	Action:    serve,
 }
 
-func serve(context *cli.Context) error {
+const shutdownTimeoutMilliseconds = 500
 
-	SetLogByContext(context)
+func serve(cliContext *cli.Context) error {
 
-	appConfig, err := getConfigFromContext(context)
+	SetLogByContext(cliContext)
+
+	appConfig, err := getConfigFromContext(cliContext)
 
 	if err != nil {
 		log.Error("Unable to parse configuration")
@@ -59,6 +68,51 @@ func serve(context *cli.Context) error {
 
 	web.SetDisplayErrors(appConfig.HttpConfig.DisplayErrors)
 
+	log.Debug("Creating server")
+	srv := http.Server{
+		Addr:    appConfig.HttpConfig.ListenAddress,
+		Handler: httpServeMux,
+	}
+
+	log.Debug("Registering signal handlers")
+	var wait sync.WaitGroup
+	sigChan := make(chan os.Signal)
+	quit := make(chan int)
+
+	wait.Add(1)
+	signal.Notify(sigChan, syscall.SIGINT, syscall.SIGTERM)
+
+	go func() {
+		for {
+			select {
+			case sig := <-sigChan:
+				log.Debug(fmt.Sprintf("Received %s signal", sig.String()))
+
+				ctx, cancel := context.WithTimeout(context.Background(), time.Duration(shutdownTimeoutMilliseconds*time.Millisecond))
+				defer cancel()
+
+				err = srv.Shutdown(ctx)
+				if err != nil {
+					appLog.DebugError("An error occured on http server shutown, ", err)
+				}
+
+				wait.Done()
+				return
+			case <-quit:
+				wait.Done()
+				return
+			}
+		}
+
+	}()
+
 	log.Debug("Serving http")
-	return http.ListenAndServe(appConfig.HttpConfig.ListenAddress, httpServeMux)
+	if err = srv.ListenAndServe(); err != http.ErrServerClosed {
+		quit <- 0
+		return err
+	}
+	log.Debug("Server closed")
+
+	wait.Wait()
+	return nil
 }

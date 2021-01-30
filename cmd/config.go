@@ -22,11 +22,11 @@ var CmdConfig = cli.Command{
 	Action:    check,
 }
 
-func check(context *cli.Context) error {
+func check(cliContext *cli.Context) error {
 
-	SetLogByContext(context)
+	SetLogByContext(cliContext)
 
-	_, err := getConfigFromContext(context)
+	_, err := getConfigFromContext(cliContext)
 
 	if err != nil {
 		log.Error("Unable to parse configuration")

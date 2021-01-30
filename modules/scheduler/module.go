@@ -2,7 +2,6 @@ package scheduler
 
 import (
 	"fmt"
-	"math"
 	"sync"
 	"time"
 
@@ -22,9 +21,9 @@ type Job interface {
 }
 
 type ScheduledJob struct {
-	Job                      Job
-	TickDurationMilliseconds time.Duration
-	jobControl               jobControl
+	Job          Job
+	Tickduration time.Duration
+	jobControl   jobControl
 }
 
 type jobControl struct {
@@ -62,37 +61,37 @@ func (scheduler *Scheduler) Wait() {
 }
 
 func (job *ScheduledJob) Every(duration time.Duration) *ScheduledJob {
-	return job.setDuration(duration * 1000 * 1000)
+	return job.setDuration(duration)
 }
 
-func (job *ScheduledJob) Milliseconds(duration int) *ScheduledJob {
-	return job.plusDuration(time.Duration(duration * int(math.Pow10(6))))
+func (job *ScheduledJob) Milliseconds(d int) *ScheduledJob {
+	return job.plusDuration(time.Duration(d * int(time.Millisecond)))
 }
 
-func (job *ScheduledJob) Seconds(duration int) *ScheduledJob {
-	return job.plusDuration(time.Duration(duration * int(math.Pow10(9))))
+func (job *ScheduledJob) Seconds(d int) *ScheduledJob {
+	return job.plusDuration(time.Duration(d * int(time.Second)))
 }
 
-func (job *ScheduledJob) Minutes(duration int) *ScheduledJob {
-	return job.Seconds(duration * 60)
+func (job *ScheduledJob) Minutes(d int) *ScheduledJob {
+	return job.plusDuration(time.Duration(d * int(time.Minute)))
 }
 
-func (job *ScheduledJob) Hours(duration int) *ScheduledJob {
-	return job.Minutes(duration * 60)
+func (job *ScheduledJob) Hours(d int) *ScheduledJob {
+	return job.plusDuration(time.Duration(d * int(time.Hour)))
 }
 
-func (job *ScheduledJob) Days(duration int) *ScheduledJob {
-	return job.Hours(duration * 24)
+func (job *ScheduledJob) Days(d int) *ScheduledJob {
+	return job.Hours(d * 24)
 }
 
 func (job *ScheduledJob) setDuration(duration time.Duration) *ScheduledJob {
-	job.TickDurationMilliseconds = duration
-	job.jobControl.reset <- job.TickDurationMilliseconds
+	job.Tickduration = duration
+	job.jobControl.reset <- job.Tickduration
 	return job
 }
 
 func (job *ScheduledJob) plusDuration(duration time.Duration) *ScheduledJob {
-	return job.setDuration(job.TickDurationMilliseconds + duration)
+	return job.setDuration(job.Tickduration + duration)
 }
 
 func functionJobBuilder(fct func()) Job {

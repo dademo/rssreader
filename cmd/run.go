@@ -16,11 +16,11 @@ var CmdRun = cli.Command{
 	Action:    run,
 }
 
-func run(context *cli.Context) error {
+func run(cliContext *cli.Context) error {
 
-	SetLogByContext(context)
+	SetLogByContext(cliContext)
 
-	appConfig, err := getConfigFromContext(context)
+	appConfig, err := getConfigFromContext(cliContext)
 
 	if err != nil {
 		log.Error("Unable to parse configuration")

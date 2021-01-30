@@ -61,6 +61,11 @@ func filterFeedItems(responseWriter http.ResponseWriter, request *http.Request) 
 			web.AnswerError(err, http.StatusInternalServerError, responseWriter)
 			return
 		}
+
+		if len(feeds) == 0 {
+			responseWriter.WriteHeader(http.StatusNotFound)
+		}
+
 		web.MarshallWriteJson(responseWriter, feeds)
 	} else {
 		responseWriter.WriteHeader(http.StatusBadRequest)
