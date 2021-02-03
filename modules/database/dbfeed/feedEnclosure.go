@@ -11,10 +11,10 @@ import (
 )
 
 type FeedEnclosure struct {
-	Id     uint64
-	URL    string
-	Length string
-	Type   string
+	Id     uint64 `json:"id"`
+	URL    string `json:"url"`
+	Length string `json:"length"`
+	Type   string `json:"type"`
 }
 
 func FromEnclosure(enclosure *gofeed.Enclosure) *FeedEnclosure {

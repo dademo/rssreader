@@ -10,8 +10,8 @@ import (
 )
 
 type FeedCategory struct {
-	Id       uint64
-	Category string
+	Id       uint64 `json:"id"`
+	Category string `json:"category"`
 }
 
 func FromCategory(category string) *FeedCategory {

@@ -26,7 +26,7 @@ var CmdServe = cli.Command{
 	Action:    serve,
 }
 
-const shutdownTimeoutMilliseconds = 500
+const shutdownTimeoutMilliseconds = 5000
 
 func serve(cliContext *cli.Context) error {
 

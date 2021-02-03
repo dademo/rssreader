@@ -11,9 +11,9 @@ import (
 )
 
 type FeedImage struct {
-	Id    uint64
-	URL   string
-	Title string
+	Id    uint64 `json:"id"`
+	URL   string `json:"url"`
+	Title string `json:"title"`
 }
 
 func FromImage(image *gofeed.Image) *FeedImage {

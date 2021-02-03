@@ -12,21 +12,21 @@ import (
 )
 
 type Feed struct {
-	Id          uint64
-	Author      *FeedAuthor
-	Image       *FeedImage
-	Categories  []*FeedCategory
-	Items       []*FeedItem
-	Title       string
-	Description string
-	Link        string
-	FeedLink    string
-	Updated     *time.Time
-	Published   *time.Time
-	Language    string
-	Copyright   string
-	Generator   string
-	LastUpdate  *time.Time
+	Id          uint64          `json:"id"`
+	Author      *FeedAuthor     `json:"author"`
+	Image       *FeedImage      `json:"image"`
+	Categories  []*FeedCategory `json:"categories"`
+	Items       []*FeedItem     `json:"items"`
+	Title       string          `json:"title"`
+	Description string          `json:"description"`
+	Link        string          `json:"link"`
+	FeedLink    string          `json:"feedlink"`
+	Updated     *time.Time      `json:"updated"`
+	Published   *time.Time      `json:"published"`
+	Language    string          `json:"language"`
+	Copyright   string          `json:"copyright"`
+	Generator   string          `json:"generator"`
+	LastUpdate  *time.Time      `json:"lastUpdate"`
 }
 
 func FromFeed(feed *gofeed.Feed) *Feed {

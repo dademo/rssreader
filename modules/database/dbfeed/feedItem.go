@@ -14,19 +14,19 @@ import (
 )
 
 type FeedItem struct {
-	Id          uint64
-	Author      *FeedAuthor
-	Image       *FeedImage
-	Categories  []*FeedCategory
-	Enclosures  []*FeedEnclosure
-	Feed        *Feed
-	Title       string
-	Description string
-	Content     string
-	Link        string
-	Updated     *time.Time
-	Published   *time.Time
-	GUID        string
+	Id          uint64           `json:"id"`
+	Author      *FeedAuthor      `json:"author"`
+	Image       *FeedImage       `json:"image"`
+	Categories  []*FeedCategory  `json:"categories"`
+	Enclosures  []*FeedEnclosure `json:"enclosures"`
+	Feed        *Feed            `json:"feed"`
+	Title       string           `json:"title"`
+	Description string           `json:"description"`
+	Content     string           `json:"content"`
+	Link        string           `json:"link"`
+	Updated     *time.Time       `json:"updated"`
+	Published   *time.Time       `json:"published"`
+	GUID        string           `json:"guid"`
 }
 
 func FromFeedItem(item *gofeed.Item) *FeedItem {
