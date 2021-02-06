@@ -66,7 +66,7 @@ type DatabaseEntity interface {
 
 type PrimaryKey = uint64
 
-func ConnectDB(dbConfig config.DatabaseConfig) error {
+func ConnectDB(dbConfig *config.DatabaseConfig) error {
 
 	var err error
 
@@ -84,7 +84,7 @@ func ConnectDB(dbConfig config.DatabaseConfig) error {
 
 	err = database.Ping()
 	if err != nil {
-		log.Error("Unable to establish a connection to the database")
+		appLog.DebugError(err, "Unable to establish a connection to the database")
 		return err
 	}
 
@@ -108,7 +108,7 @@ func PrepareDatabase() (err error) {
 	defer ctx.Done()
 	conn, err := database.Conn(ctx)
 	if err != nil {
-		log.Error("Unable to connect to the database", err)
+		appLog.DebugError(err, "Unable to connect to the database")
 		return err
 	}
 
@@ -124,24 +124,24 @@ func PrepareDatabase() (err error) {
 	rollbackFunc := func(tx *sql.Tx) {
 		err := tx.Rollback()
 		if err != nil {
-			appLog.DebugError("An error occured while rollback, ", err)
+			appLog.DebugError(err, "An error occured while rollback, ")
 		}
 	}
 
 	tx, err := database.Begin()
 	if err != nil {
-		appLog.DebugError("Unable to begin transaction")
+		appLog.DebugError(err, "Unable to begin transaction")
 		return err
 	}
 
 	err = initInformationTables(tx)
 	if err != nil {
-		appLog.DebugError("Unable to initalize system tables")
+		appLog.DebugError(err, "Unable to initalize system tables")
 		return err
 	}
 	err = tx.Commit()
 	if err != nil {
-		appLog.DebugError("Unable to commit transaction")
+		appLog.DebugError(err, "Unable to commit transaction")
 		return err
 	}
 
@@ -149,14 +149,14 @@ func PrepareDatabase() (err error) {
 
 		tx, err := database.Begin()
 		if err != nil {
-			appLog.DebugError("Unable to begin transaction")
+			appLog.DebugError(err, "Unable to begin transaction")
 			return err
 		}
 
 		existingModuleDef, err := fetchModuleByName(tx, databaseTableCreatorDef.ModuleName)
 
 		if err != nil {
-			log.Error("Unable to check for module installation, ", err)
+			appLog.DebugError(err, "Unable to check for module installation, ")
 			defer rollbackFunc(tx)
 			return err
 		}
@@ -165,7 +165,7 @@ func PrepareDatabase() (err error) {
 			log.Debug(fmt.Sprintf("Creating tables for mod [%s:%s]", databaseTableCreatorDef.ModuleName, databaseTableCreatorDef.Version))
 			err = databaseTableCreatorDef.DatabaseModuleTableCreator(tx)
 			if err != nil {
-				log.Error("An error occured while creating some tables, ", err)
+				appLog.DebugError(err, "An error occured while creating some tables, ")
 				defer rollbackFunc(tx)
 				return err
 			}
@@ -193,7 +193,7 @@ func PrepareDatabase() (err error) {
 
 			err = databaseTableCreatorDef.DatabaseModuleTableUpdater(tx, existingModuleDef.Version)
 			if err != nil {
-				log.Error("An error occured while updating some tables, ", err)
+				appLog.DebugError(err, "An error occured while updating some tables, ")
 				defer rollbackFunc(tx)
 				return err
 			}
@@ -223,7 +223,7 @@ func PrepareDatabase() (err error) {
 		}
 		err = tx.Commit()
 		if err != nil {
-			appLog.DebugError("Unable to commit transaction")
+			appLog.DebugError(err, "Unable to commit transaction")
 			return err
 		}
 	}
@@ -248,7 +248,7 @@ func NormalizedSql(sql string) (string, error) {
 	const _PLACEHOLDER = "?"
 	var buffer bytes.Buffer
 
-	log.Debug(fmt.Sprintf("Formatting SQL :\n%s", sql))
+	log.Trace(fmt.Sprintf("Formatting SQL :\n%s", sql))
 
 	tpl, err := template.New("sql").Parse(sql)
 
@@ -358,7 +358,7 @@ func sqlExecCommonDriver(statement *sql.Stmt, fetchId bool, args ...interface{})
 	if fetchId {
 		_id, err := result.LastInsertId()
 		if err != nil {
-			appLog.DebugError(fmt.Sprintf("An error occured while getting the last inserted Id"), err)
+			appLog.DebugError(err, "An error occured while getting the last inserted Id")
 			return 0, err
 		} else {
 			return _id, nil
@@ -379,18 +379,18 @@ func sqlExecPostgresql(statement *sql.Stmt, args ...interface{}) (int64, error) 
 	defer func() {
 		err := rows.Close()
 		if err != nil {
-			appLog.DebugError("Unable to close rows")
+			appLog.DebugError(err, "Unable to close rows")
 		}
 	}()
 
 	var _id int64
 	if !rows.Next() {
-		appLog.DebugError("Unable to fetch result rows, probaby due to missing RETURNING statement")
+		appLog.DebugError(err, "Unable to fetch result rows, probaby due to missing RETURNING statement")
 		return 0, errors.New("Unable to fetch result rows, probaby due to missing RETURNING statement")
 	}
 	rows.Scan(&_id)
 	if err != nil {
-		appLog.DebugError(fmt.Sprintf("An error occured while fetching id"))
+		appLog.DebugError(err, "An error occured while fetching id")
 		return 0, err
 	} else {
 		return _id, nil
@@ -451,7 +451,7 @@ func initInformationTables(connection *sql.Tx) error {
 	_, err = connection.Exec(sql)
 
 	if err != nil {
-		log.Error("Unable to create system tables")
+		appLog.DebugError(err, "Unable to create system tables")
 		return err
 	}
 
@@ -556,7 +556,7 @@ func DeferStmtCloseFct(stmt *sql.Stmt) func() {
 	return func() {
 		err := stmt.Close()
 		if err != nil {
-			appLog.DebugError("Unable to close statement, ", err)
+			appLog.DebugError(err, "Unable to close statement, ")
 		}
 	}
 }
@@ -565,7 +565,7 @@ func DeferRowsCloseFct(rows *sql.Rows) func() {
 	return func() {
 		err := rows.Close()
 		if err != nil {
-			appLog.DebugError("Unable to close rows, ", err)
+			appLog.DebugError(err, "Unable to close rows, ")
 		}
 	}
 }
@@ -578,7 +578,7 @@ func StrWithMaxLength(s string, l int) string {
 	}
 }
 
-func makeFinalConnStr(dbConfig config.DatabaseConfig) string {
+func makeFinalConnStr(dbConfig *config.DatabaseConfig) string {
 
 	switch dbConfig.Driver {
 	case "mysql":

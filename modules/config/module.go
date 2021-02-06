@@ -4,6 +4,8 @@ import (
 	"fmt"
 	"io/ioutil"
 
+	appLog "github.com/dademo/rssreader/modules/log"
+
 	log "github.com/sirupsen/logrus"
 	"gopkg.in/yaml.v2"
 )
@@ -22,8 +24,13 @@ type DatabaseConfig struct {
 }
 
 type LogConfig struct {
-	Level  string   `yaml:"level"`
-	Output []string `yaml:"output"`
+	Level           string                 `yaml:"level"`
+	Output          []string               `yaml:"output"`
+	ReportCaller    bool                   `yaml:"reportCaller"`
+	DisableColors   bool                   `yaml:"disableColors"`
+	FullTimestamp   bool                   `yaml:"fullTimestamp"`
+	TimestampFormat string                 `yaml:"timestampFormat"`
+	Backends        *LogBackendsDefinition `yaml:"logBackendsDefinition"`
 }
 
 type HttpConfig struct {
@@ -33,27 +40,27 @@ type HttpConfig struct {
 }
 
 type Config struct {
-	Feeds      []Feed         `yaml:"feeds"`
-	DbConfig   DatabaseConfig `yaml:"database"`
-	LogConfig  LogConfig      `yaml:"log"`
-	HttpConfig HttpConfig     `yaml:"http"`
+	Feeds      []*Feed         `yaml:"feeds"`
+	DbConfig   *DatabaseConfig `yaml:"database"`
+	LogConfig  *LogConfig      `yaml:"log"`
+	HttpConfig *HttpConfig     `yaml:"http"`
 }
 
-func ReadConfig(configFilePath string) (Config, error) {
+func ReadConfig(configFilePath string) (*Config, error) {
 
 	log.Debug(fmt.Sprintf("Reading config [%s]", configFilePath))
 
 	fileContent, err := ioutil.ReadFile(configFilePath)
 	if err != nil {
-		log.Error("Unable to read the configuration file")
-		return Config{}, err
+		appLog.DebugError(err, "Unable to read the configuration file")
+		return &Config{}, err
 	}
 
-	parsed := Config{}
-	err = yaml.Unmarshal(fileContent, &parsed)
+	parsed := defaultConfig()
+	err = yaml.Unmarshal(fileContent, parsed)
 	if err != nil {
-		log.Error("Unable to unmarshall configuration")
-		return Config{}, err
+		appLog.DebugError(err, "Unable to unmarshall configuration")
+		return &Config{}, err
 	}
 
 	log.Debug("Configuration have been read")
@@ -67,15 +74,53 @@ func SaveConfig(config Config, configFilePath string) error {
 
 	marshalled, err := yaml.Marshal(config)
 	if err != nil {
-		log.Error("Unable to marshall the configuration")
+		appLog.DebugError(err, "Unable to marshall the configuration")
 		return err
 	}
 
 	err = ioutil.WriteFile(configFilePath, marshalled, 0644)
 	if err != nil {
-		log.Error("Unable to write the configuration")
+		appLog.DebugError(err, "Unable to write the configuration")
 		return err
 	}
 
 	return nil
+}
+
+func DefaultLogConfig() *LogConfig {
+	return &LogConfig{
+		Level:           "info",
+		Output:          []string{"stderr"},
+		ReportCaller:    false,
+		DisableColors:   false,
+		FullTimestamp:   false,
+		TimestampFormat: "",
+		Backends:        defaultLogBackendsConfig(),
+	}
+}
+
+func defaultConfig() *Config {
+	return &Config{
+		Feeds:      []*Feed{},
+		DbConfig:   defaultDatabaseConfig(),
+		LogConfig:  DefaultLogConfig(),
+		HttpConfig: defaultHttpĈonfig(),
+	}
+}
+
+func defaultDatabaseConfig() *DatabaseConfig {
+	return &DatabaseConfig{
+		Driver:             "sqlite",
+		ConnStr:            ":memory:",
+		MaxOpenConnections: 10,
+		MaxIdleConnexions:  5,
+	}
+}
+
+func defaultHttpĈonfig() *HttpConfig {
+	return &HttpConfig{
+		ListenAddress:  "0.0.0.0",
+		StaticFilesDir: "static",
+		DisplayErrors:  true,
+	}
 }

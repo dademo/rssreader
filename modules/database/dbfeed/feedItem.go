@@ -62,7 +62,7 @@ func (f *FeedItem) Save() error {
 	if f.Author != nil {
 		err := f.Author.Save()
 		if err != nil {
-			appLog.DebugError("Unable to save a feed author")
+			appLog.DebugError(err, "Unable to save a feed author")
 			return err
 		}
 	}
@@ -70,7 +70,7 @@ func (f *FeedItem) Save() error {
 	if f.Image != nil {
 		err := f.Image.Save()
 		if err != nil {
-			appLog.DebugError("Unable to save a feed image")
+			appLog.DebugError(err, "Unable to save a feed image")
 			return err
 		}
 	}
@@ -79,7 +79,7 @@ func (f *FeedItem) Save() error {
 		for _, category := range f.Categories {
 			err := category.Save()
 			if err != nil {
-				appLog.DebugError("Unable to save a feed cateogry")
+				appLog.DebugError(err, "Unable to save a feed cateogry")
 				return err
 			}
 		}
@@ -89,7 +89,7 @@ func (f *FeedItem) Save() error {
 		for _, enclosure := range f.Enclosures {
 			err := enclosure.Save()
 			if err != nil {
-				appLog.DebugError("Unable to save a feed enclosure")
+				appLog.DebugError(err, "Unable to save a feed enclosure")
 				return err
 			}
 		}
@@ -97,13 +97,13 @@ func (f *FeedItem) Save() error {
 
 	err := f.Normalize()
 	if err != nil {
-		appLog.DebugError("Unable to normalize item")
+		appLog.DebugError(err, "Unable to normalize item")
 		return err
 	}
 
 	existingFeedItem, err := feedItemByGUID(f.GUID)
 	if err != nil {
-		appLog.DebugError("Unable to check for feed item existance")
+		appLog.DebugError(err, "Unable to check for feed item existance")
 		return err
 	}
 
@@ -120,14 +120,14 @@ func (f *FeedItem) Save() error {
 			VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
 		`)
 		if err != nil {
-			appLog.DebugError(err)
+			appLog.DebugError(err, err)
 			return err
 		}
 
 		stmt, err := database.Prepare(appDatabase.PrepareExecSQL(sql))
 
 		if err != nil {
-			appLog.DebugError("Unable to create the statement for feed item creation")
+			appLog.DebugError(err, "Unable to create the statement for feed item creation")
 			return err
 		}
 		defer appDatabase.DeferStmtCloseFct(stmt)()
@@ -146,7 +146,7 @@ func (f *FeedItem) Save() error {
 		)
 
 		if err != nil {
-			appLog.DebugError("An error occured while saving a feed item")
+			appLog.DebugError(err, "An error occured while saving a feed item")
 			return err
 		} else {
 			f.Id = appDatabase.PrimaryKey(newId)
@@ -171,14 +171,14 @@ func (f *FeedItem) Save() error {
 			WHERE id = ?
 		`)
 		if err != nil {
-			appLog.DebugError(err)
+			appLog.DebugError(err, err)
 			return err
 		}
 
 		stmt, err := database.Prepare(appDatabase.PrepareExecSQL(sql))
 
 		if err != nil {
-			appLog.DebugError("Unable to create the statement for feed item creation")
+			appLog.DebugError(err, "Unable to create the statement for feed item creation")
 			return err
 		}
 		defer appDatabase.DeferStmtCloseFct(stmt)()
@@ -198,7 +198,7 @@ func (f *FeedItem) Save() error {
 		)
 
 		if err != nil {
-			appLog.DebugError(fmt.Sprintf("An error occured while updating a feed item (%d)", f.Id))
+			appLog.DebugError(err, fmt.Sprintf("An error occured while updating a feed item (%d)", f.Id))
 			return err
 		}
 	}
@@ -261,24 +261,24 @@ func feedItemByGUID(guid string) (*FeedItem, error) {
 		WHERE guid = ?
 	`)
 	if err != nil {
-		appLog.DebugError(err)
+		appLog.DebugError(err, err)
 		return nil, err
 	}
 
 	stmt, err := database.Prepare(sql)
 	if err != nil {
-		appLog.DebugError("Unable to prepare SELECT statement")
+		appLog.DebugError(err, "Unable to prepare SELECT statement")
 		return nil, err
 	}
 	defer appDatabase.DeferStmtCloseFct(stmt)()
 
 	rows, err := stmt.Query(guid)
 	if err != nil {
-		appLog.DebugError("Unable to get result row")
+		appLog.DebugError(err, "Unable to get result row")
 		return nil, err
 	}
 	if rows.Err() != nil {
-		appLog.DebugError("Unable to get result row")
+		appLog.DebugError(err, "Unable to get result row")
 		return nil, err
 	}
 	defer appDatabase.DeferRowsCloseFct(rows)()
@@ -301,26 +301,26 @@ func feedItemByGUID(guid string) (*FeedItem, error) {
 			&result.GUID,
 		)
 		if err != nil {
-			appLog.DebugError("Unable to affect results")
+			appLog.DebugError(err, "Unable to affect results")
 			return nil, err
 		}
 
 		result.Updated, err = appDatabase.SqlDateParse(updatedRawValue)
 		if err != nil {
-			appLog.DebugError("Unable to parse updated date")
+			appLog.DebugError(err, "Unable to parse updated date")
 			return nil, err
 		}
 
 		result.Published, err = appDatabase.SqlDateParse(publishedRawValue)
 		if err != nil {
-			appLog.DebugError("Unable to parse published date")
+			appLog.DebugError(err, "Unable to parse published date")
 			return nil, err
 		}
 
 		if authorId != nil {
 			result.Author, err = authorById(*authorId)
 			if err != nil {
-				appLog.DebugError("Unable to fetch feed item author")
+				appLog.DebugError(err, "Unable to fetch feed item author")
 				return nil, err
 			}
 		} else {
@@ -330,7 +330,7 @@ func feedItemByGUID(guid string) (*FeedItem, error) {
 		if imageId != nil {
 			result.Image, err = imageById(*imageId)
 			if err != nil {
-				appLog.DebugError("Unable to fetch feed item image")
+				appLog.DebugError(err, "Unable to fetch feed item image")
 				return nil, err
 			}
 		} else {
@@ -339,13 +339,13 @@ func feedItemByGUID(guid string) (*FeedItem, error) {
 
 		result.Categories, err = categoriesOfFeedItem(result)
 		if err != nil {
-			appLog.DebugError("Unable to fetch feed item categories")
+			appLog.DebugError(err, "Unable to fetch feed item categories")
 			return nil, err
 		}
 
 		result.Enclosures, err = enclosuresOfFeedItem(result)
 		if err != nil {
-			appLog.DebugError("Unable to fetch feed item enclosure")
+			appLog.DebugError(err, "Unable to fetch feed item enclosure")
 			return nil, err
 		}
 
@@ -377,24 +377,24 @@ func GetFeedItems(feedId appDatabase.PrimaryKey) ([]*FeedItem, error) {
 		WHERE id_feed = ?
 	`)
 	if err != nil {
-		appLog.DebugError(err)
+		appLog.DebugError(err, err)
 		return nil, err
 	}
 
 	stmt, err := database.Prepare(sql)
 	if err != nil {
-		appLog.DebugError("Unable to prepare SELECT statement")
+		appLog.DebugError(err, "Unable to prepare SELECT statement")
 		return nil, err
 	}
 	defer appDatabase.DeferStmtCloseFct(stmt)()
 
 	rows, err := stmt.Query(feedId)
 	if err != nil {
-		appLog.DebugError("Unable to get result row")
+		appLog.DebugError(err, "Unable to get result row")
 		return nil, err
 	}
 	if rows.Err() != nil {
-		appLog.DebugError("Unable to get result row")
+		appLog.DebugError(err, "Unable to get result row")
 		return nil, err
 	}
 	defer appDatabase.DeferRowsCloseFct(rows)()
@@ -418,26 +418,26 @@ func GetFeedItems(feedId appDatabase.PrimaryKey) ([]*FeedItem, error) {
 			&v.GUID,
 		)
 		if err != nil {
-			appLog.DebugError("Unable to affect results")
+			appLog.DebugError(err, "Unable to affect results")
 			return nil, err
 		}
 
 		v.Updated, err = appDatabase.SqlDateParse(updatedRawValue)
 		if err != nil {
-			appLog.DebugError("Unable to parse updated date")
+			appLog.DebugError(err, "Unable to parse updated date")
 			return nil, err
 		}
 
 		v.Published, err = appDatabase.SqlDateParse(publishedRawValue)
 		if err != nil {
-			appLog.DebugError("Unable to parse published date")
+			appLog.DebugError(err, "Unable to parse published date")
 			return nil, err
 		}
 
 		if authorId != nil {
 			v.Author, err = authorById(*authorId)
 			if err != nil {
-				appLog.DebugError("Unable to fetch feed item author")
+				appLog.DebugError(err, "Unable to fetch feed item author")
 				return nil, err
 			}
 		} else {
@@ -447,7 +447,7 @@ func GetFeedItems(feedId appDatabase.PrimaryKey) ([]*FeedItem, error) {
 		if imageId != nil {
 			v.Image, err = imageById(*imageId)
 			if err != nil {
-				appLog.DebugError("Unable to fetch feed item image")
+				appLog.DebugError(err, "Unable to fetch feed item image")
 				return nil, err
 			}
 		} else {
@@ -456,13 +456,13 @@ func GetFeedItems(feedId appDatabase.PrimaryKey) ([]*FeedItem, error) {
 
 		v.Categories, err = categoriesOfFeedItem(v)
 		if err != nil {
-			appLog.DebugError("Unable to fetch feed item categories")
+			appLog.DebugError(err, "Unable to fetch feed item categories")
 			return nil, err
 		}
 
 		v.Enclosures, err = enclosuresOfFeedItem(v)
 		if err != nil {
-			appLog.DebugError("Unable to fetch feed item enclosure")
+			appLog.DebugError(err, "Unable to fetch feed item enclosure")
 			return nil, err
 		}
 

@@ -36,14 +36,14 @@ const (
 	contentTypeMultipartFormData     = "multipart/form-data"
 )
 
-func RegisterServerHandlers(serveMux *http.ServeMux, httpConfig config.HttpConfig) error {
+func RegisterServerHandlers(serveMux *http.ServeMux, httpConfig *config.HttpConfig) error {
 
 	var fileServerDir string
 
 	if !filepath.IsAbs(httpConfig.StaticFilesDir) {
 		appDir, err := filepath.Abs(filepath.Dir(os.Args[0]))
 		if err != nil {
-			appLog.DebugError("Unable to get application running directory")
+			appLog.DebugError(err, "Unable to get application running directory")
 			return err
 		}
 		fileServerDir = filepath.Join(appDir, httpConfig.StaticFilesDir)
@@ -54,13 +54,13 @@ func RegisterServerHandlers(serveMux *http.ServeMux, httpConfig config.HttpConfi
 	fileInfo, err := os.Stat(fileServerDir)
 	if err != nil {
 		if os.IsNotExist(err) {
-			appLog.DebugError(fmt.Sprintf("Directory specified with fileServerDir does not exists [%s]", fileServerDir))
+			appLog.DebugError(err, fmt.Sprintf("Directory specified with fileServerDir does not exists [%s]", fileServerDir))
 			return err
 		} else if os.IsPermission(err) {
-			appLog.DebugError(fmt.Sprintf("You do not have permission to read directory [%s]", fileServerDir))
+			appLog.DebugError(err, fmt.Sprintf("You do not have permission to read directory [%s]", fileServerDir))
 			return err
 		} else {
-			appLog.DebugError(fmt.Sprintf("Unknown error while stat static file serve on path [%s]", fileServerDir))
+			appLog.DebugError(err, fmt.Sprintf("Unknown error while stat static file serve on path [%s]", fileServerDir))
 			return err
 		}
 	}
@@ -83,7 +83,7 @@ func MarshallWriteJson(responseWriter http.ResponseWriter, value interface{}) {
 
 	marshalledValue, err := json.Marshal(value)
 	if err != nil {
-		appLog.DebugError("Unable to handle the client request")
+		appLog.DebugError(err, "Unable to handle the client request")
 		AnswerError(err, http.StatusInternalServerError, responseWriter)
 		return
 	}
@@ -92,7 +92,7 @@ func MarshallWriteJson(responseWriter http.ResponseWriter, value interface{}) {
 
 	_, err = responseWriter.Write(marshalledValue)
 	if err != nil {
-		appLog.DebugError("Unable to write answer")
+		appLog.DebugError(err, "Unable to write answer")
 		AnswerError(err, http.StatusInternalServerError, responseWriter)
 		return
 	}
@@ -232,7 +232,7 @@ func AnswerError(err error, code int, responseWriter http.ResponseWriter) {
 
 		_, err = responseWriter.Write([]byte(msg))
 		if err != nil {
-			appLog.DebugError("Unable to write answer")
+			appLog.DebugError(err, "Unable to write answer")
 			responseWriter.WriteHeader(http.StatusInternalServerError)
 		}
 	}

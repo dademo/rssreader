@@ -1,4 +1,4 @@
-package feeds
+package feed
 
 import "github.com/dademo/rssreader/modules/web"
 

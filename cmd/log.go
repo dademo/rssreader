@@ -1,7 +1,13 @@
 package cmd
 
 import (
+	"fmt"
+
+	"github.com/dademo/rssreader/modules/config"
 	"github.com/dademo/rssreader/modules/log"
+	logHooks "github.com/dademo/rssreader/modules/log/hooks"
+
+	"github.com/sirupsen/logrus"
 	"github.com/urfave/cli"
 )
 
@@ -18,18 +24,80 @@ var FlagLogFile = cli.StringFlag{
 	Required: false,
 }
 
-func SetLogByContext(context *cli.Context) error {
+var FlagLogReportCaller = cli.BoolFlag{
+	Name:     "log-report-caller",
+	Usage:    "write the caller name in the log",
+	Required: false,
+}
 
-	logLevelStr := context.GlobalString("log-level")
+var FlagLogDisableColors = cli.BoolFlag{
+	Name:     "log-disable-colors",
+	Usage:    "write the caller name in the log",
+	Required: false,
+}
+
+var FlagLogFullTimestamp = cli.BoolFlag{
+	Name:     "log-full-timestamp",
+	Usage:    "write the caller name in the log",
+	Required: false,
+}
+
+func SetLogByContextAndConfig(context *cli.Context, logConfig *config.LogConfig) error {
+
+	logLevelStr := firstNonEmpty(context.GlobalString("log-level"), logConfig.Level)
 
 	if logLevelStr != "" {
 		log.SetLogLevel(logLevelStr)
 	}
 
-	logFileStr := context.GlobalString("log-file")
-
-	if logFileStr != "" {
-		return log.SetLogOutputStreams("stderr", logFileStr)
+	if context.GlobalBool("log-report-caller") || logConfig.ReportCaller {
+		log.SetReportCaller()
 	}
-	return nil
+
+	log.SetFormat(&logrus.TextFormatter{
+		DisableColors:   context.GlobalBool("log-disable-colors") || logConfig.DisableColors,
+		FullTimestamp:   context.GlobalBool("log-full-timestamp") || logConfig.FullTimestamp,
+		TimestampFormat: firstNonEmpty(context.GlobalString("log-timestamp-format"), logConfig.TimestampFormat),
+	})
+
+	// Workaround to get unique values
+	allLogFileStrDict := make(map[string]bool)
+	allLogFileStr := make([]string, 0)
+
+	for _, logFileStr := range logConfig.Output {
+		allLogFileStrDict[logFileStr] = true
+	}
+	allLogFileStrDict[context.GlobalString("log-file")] = true
+
+	for logFileStr, _ := range allLogFileStrDict {
+		if logFileStr != "" {
+			allLogFileStr = append(allLogFileStr, logFileStr)
+		}
+	}
+
+	// If none set, defaults to stderr
+	if len(allLogFileStr) == 0 {
+		allLogFileStr = []string{"stderr"}
+	}
+
+	err := log.SetLogOutputStreams(allLogFileStr...)
+	if err != nil {
+		fmt.Println("Unable to set log output streams")
+		return err
+	}
+
+	return logHooks.RegisterHooks(logConfig.Backends)
+}
+
+func SetLogByContext(context *cli.Context) error {
+	return SetLogByContextAndConfig(context, config.DefaultLogConfig())
+}
+
+func firstNonEmpty(args ...string) string {
+	for _, arg := range args {
+		if arg != "" {
+			return arg
+		}
+	}
+	return ""
 }

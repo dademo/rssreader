@@ -15,9 +15,12 @@ import (
 	_ "github.com/go-sql-driver/mysql"
 	_ "github.com/lib/pq"
 	_ "github.com/mattn/go-sqlite3"
+	_ "github.com/tidwall/buntdb"
+	_ "go.mongodb.org/mongo-driver/mongo"
 
 	// HTTP endpoints
-	_ "github.com/dademo/rssreader/modules/web/feeds"
+	_ "github.com/dademo/rssreader/modules/web/feed"
+	_ "github.com/dademo/rssreader/modules/web/log"
 )
 
 var (
@@ -35,6 +38,9 @@ func main() {
 	app.Flags = []cli.Flag{
 		cmd.FlagLogLevel,
 		cmd.FlagLogFile,
+		cmd.FlagLogReportCaller,
+		cmd.FlagLogDisableColors,
+		cmd.FlagLogFullTimestamp,
 		cmd.FlagConfig,
 	}
 

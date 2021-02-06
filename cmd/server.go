@@ -30,26 +30,30 @@ const shutdownTimeoutMilliseconds = 5000
 
 func serve(cliContext *cli.Context) error {
 
-	SetLogByContext(cliContext)
-
 	appConfig, err := getConfigFromContext(cliContext)
 
 	if err != nil {
-		log.Error("Unable to parse configuration")
+		log.WithError(err).Error("Unable to parse configuration")
+		return err
+	}
+
+	err = SetLogByContextAndConfig(cliContext, appConfig.LogConfig)
+	if err != nil {
+		log.WithError(err).Error("Unable to set log configuration")
 		return err
 	}
 
 	err = database.ConnectDB(appConfig.DbConfig)
 
 	if err != nil {
-		log.Error("An error occured when connecting to the database")
+		log.WithError(err).Error("An error occured when connecting to the database")
 		return err
 	}
 
 	err = database.PrepareDatabase()
 
 	if err != nil {
-		log.Error("An error occured when prepairing the database")
+		log.WithError(err).Error("An error occured when prepairing the database")
 		return err
 	}
 	log.Debug("Database initialized")
@@ -62,7 +66,7 @@ func serve(cliContext *cli.Context) error {
 	err = web.RegisterServerHandlers(httpServeMux, appConfig.HttpConfig)
 
 	if err != nil {
-		appLog.DebugError("Unable to register routes")
+		appLog.DebugError(err, "Unable to register routes")
 		return err
 	}
 
@@ -93,7 +97,7 @@ func serve(cliContext *cli.Context) error {
 
 				err = srv.Shutdown(ctx)
 				if err != nil {
-					appLog.DebugError("An error occured on http server shutown, ", err)
+					appLog.DebugError(err, "An error occured on http server shutown, ", err)
 				}
 
 				wait.Done()

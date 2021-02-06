@@ -29,7 +29,7 @@ func check(cliContext *cli.Context) error {
 	_, err := getConfigFromContext(cliContext)
 
 	if err != nil {
-		log.Error("Unable to parse configuration")
+		log.WithError(err).Error("Unable to parse configuration")
 		return err
 	} else {
 		fmt.Println("Your configuration is correct")
@@ -37,6 +37,6 @@ func check(cliContext *cli.Context) error {
 	}
 }
 
-func getConfigFromContext(context *cli.Context) (config.Config, error) {
+func getConfigFromContext(context *cli.Context) (*config.Config, error) {
 	return config.ReadConfig(context.GlobalString("config"))
 }

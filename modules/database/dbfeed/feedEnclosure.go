@@ -47,7 +47,7 @@ func (f *FeedEnclosure) Save() error {
 
 		existing, err := feedEnclosureByUrl(f.URL)
 		if err != nil {
-			appLog.DebugError("Unable to get enclosure by url")
+			appLog.DebugError(err, "Unable to get enclosure by url")
 			return err
 		}
 
@@ -63,14 +63,14 @@ func (f *FeedEnclosure) Save() error {
 				VALUES (?, ?, ?)
 			`)
 			if err != nil {
-				appLog.DebugError(err)
+				appLog.DebugError(err, err)
 				return err
 			}
 
 			stmt, err := database.Prepare(appDatabase.PrepareExecSQL(sql))
 
 			if err != nil {
-				appLog.DebugError("Unable to create the statement for feed enclosure update")
+				appLog.DebugError(err, "Unable to create the statement for feed enclosure update")
 				return err
 			}
 			defer appDatabase.DeferStmtCloseFct(stmt)()
@@ -82,7 +82,7 @@ func (f *FeedEnclosure) Save() error {
 			)
 
 			if err != nil {
-				appLog.DebugError("An error occured while saving a feed enclosure")
+				appLog.DebugError(err, "An error occured while saving a feed enclosure")
 				return err
 			} else {
 				f.Id = appDatabase.PrimaryKey(newId)
@@ -101,14 +101,14 @@ func (f *FeedEnclosure) Save() error {
 			WHERE id = ?
 		`)
 		if err != nil {
-			appLog.DebugError(err)
+			appLog.DebugError(err, err)
 			return err
 		}
 
 		stmt, err := database.Prepare(appDatabase.PrepareExecSQL(sql))
 
 		if err != nil {
-			appLog.DebugError("Unable to create the statement for feed enclosure update")
+			appLog.DebugError(err, "Unable to create the statement for feed enclosure update")
 			return err
 		}
 		defer appDatabase.DeferStmtCloseFct(stmt)()
@@ -121,7 +121,7 @@ func (f *FeedEnclosure) Save() error {
 		)
 
 		if err != nil {
-			appLog.DebugError(fmt.Sprintf("An error occured while updating a feed enclosure (%d)", f.Id))
+			appLog.DebugError(err, fmt.Sprintf("An error occured while updating a feed enclosure (%d)", f.Id))
 			return err
 		} else {
 			return nil
@@ -143,24 +143,24 @@ func enclosuresOfFeedItem(feedItem *FeedItem) ([]*FeedEnclosure, error) {
 		WHERE id_feed_item = ?
 	`)
 	if err != nil {
-		appLog.DebugError(err)
+		appLog.DebugError(err, err)
 		return nil, err
 	}
 
 	stmt, err := database.Prepare(sql)
 	if err != nil {
-		appLog.DebugError("Unable to prepare statement")
+		appLog.DebugError(err, "Unable to prepare statement")
 		return nil, err
 	}
 	defer appDatabase.DeferStmtCloseFct(stmt)()
 
 	rows, err := stmt.Query(feedItem.Id)
 	if err != nil {
-		appLog.DebugError("Unable to get result row")
+		appLog.DebugError(err, "Unable to get result row")
 		return nil, err
 	}
 	if rows.Err() != nil {
-		appLog.DebugError("Unable to get result row")
+		appLog.DebugError(err, "Unable to get result row")
 		return nil, rows.Err()
 	}
 	defer appDatabase.DeferRowsCloseFct(rows)()
@@ -171,7 +171,7 @@ func enclosuresOfFeedItem(feedItem *FeedItem) ([]*FeedEnclosure, error) {
 		v := new(FeedEnclosure)
 		err = rows.Scan(&v.Id, &v.URL, &v.Length, &v.Type)
 		if err != nil {
-			appLog.DebugError("Unable to affect results")
+			appLog.DebugError(err, "Unable to affect results")
 			return nil, err
 		} else {
 			allValues = append(allValues, v)
@@ -192,13 +192,13 @@ func feedEnclosureByUrl(url string) (*FeedEnclosure, error) {
 		WHERE url = ?
 	`)
 	if err != nil {
-		appLog.DebugError(err)
+		appLog.DebugError(err, err)
 		return nil, err
 	}
 
 	stmt, err := database.Prepare(sql)
 	if err != nil {
-		appLog.DebugError("Unable to prepare statement")
+		appLog.DebugError(err, "Unable to prepare statement")
 		return nil, err
 	}
 	defer appDatabase.DeferStmtCloseFct(stmt)()
@@ -207,11 +207,11 @@ func feedEnclosureByUrl(url string) (*FeedEnclosure, error) {
 
 	rows, err := stmt.Query(url)
 	if err != nil {
-		appLog.DebugError("Unable to get result row")
+		appLog.DebugError(err, "Unable to get result row")
 		return nil, err
 	}
 	if rows.Err() != nil {
-		appLog.DebugError("Unable to get result row")
+		appLog.DebugError(err, "Unable to get result row")
 		return nil, rows.Err()
 	}
 	defer appDatabase.DeferRowsCloseFct(rows)()
@@ -219,7 +219,7 @@ func feedEnclosureByUrl(url string) (*FeedEnclosure, error) {
 	if rows.Next() {
 		err = rows.Scan(&v.Id, &v.URL, &v.Length, &v.Type)
 		if err != nil {
-			appLog.DebugError("Unable to affect results")
+			appLog.DebugError(err, "Unable to affect results")
 			return nil, err
 		} else {
 			return v, nil

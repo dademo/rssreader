@@ -5,16 +5,15 @@ import (
 
 	"github.com/dademo/rssreader/modules/config"
 	"github.com/dademo/rssreader/modules/feed"
+	appLog "github.com/dademo/rssreader/modules/log"
 	"github.com/dademo/rssreader/modules/scheduler"
-
-	log "github.com/sirupsen/logrus"
 )
 
 type scheduledFeedReaderJob struct {
-	Feed config.Feed
+	Feed *config.Feed
 }
 
-func ScheduleFromConfig(jobScheduler *scheduler.Scheduler, config config.Config) {
+func ScheduleFromConfig(jobScheduler *scheduler.Scheduler, config *config.Config) {
 
 	for _, feed := range config.Feeds {
 		jobScheduler.Schedule(scheduler.ScheduledJob{
@@ -29,12 +28,12 @@ func (scheduledFeedReaderJob scheduledFeedReaderJob) Run() {
 
 	fetchedFeed, err := feed.Fetch(scheduledFeedReaderJob.Feed)
 	if err != nil {
-		log.Error(fmt.Sprintf("Unable to fetch feed [%s]", scheduledFeedReaderJob.Feed.Name), err)
+		appLog.DebugError(err, fmt.Sprintf("Unable to fetch feed [%s]", scheduledFeedReaderJob.Feed.Name))
 		return
 	}
 
 	err = fetchedFeed.Save()
 	if err != nil {
-		log.Error("Unable to persist values", err)
+		appLog.DebugError(err, "Unable to persist values")
 	}
 }

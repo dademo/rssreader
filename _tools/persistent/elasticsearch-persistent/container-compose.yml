@@ -11,5 +11,5 @@ services:
     volumes:
       - elasticsearch-persistent:/usr/share/elasticsearch/data
     ports:
-      - 39200:9200
-      - 39300:9300
+      - "39200:9200"
+      - "39300:9300"

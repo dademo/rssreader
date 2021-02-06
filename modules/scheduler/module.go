@@ -123,18 +123,18 @@ func tickerRunner(scheduledJob ScheduledJob) {
 	}
 }
 
-func do(feedConfig config.Feed) {
+func do(feedConfig *config.Feed) {
 
 	feed, err := feed.Fetch(feedConfig)
 
 	if err != nil {
-		log.Error(fmt.Sprintf("Unable to fetch feed [%s] at URL [%s]", feedConfig.Name, feedConfig.Url))
+		log.WithError(err).Error(fmt.Sprintf("Unable to fetch feed [%s] at URL [%s]", feedConfig.Name, feedConfig.Url))
 	}
 
 	err = feed.Save()
 
 	if err != nil {
-		log.Error(fmt.Sprintf("Unable to persist feed [%s] :\n%s", feedConfig.Name, err))
+		log.WithError(err).Error(fmt.Sprintf("Unable to persist feed [%s] :\n%s", feedConfig.Name, err))
 	}
 }
 

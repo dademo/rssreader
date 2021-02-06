@@ -32,7 +32,7 @@ func (f *FeedImage) Save() error {
 
 	existingFeedImage, err := imageByUrl(f.URL)
 	if err != nil {
-		appLog.DebugError("Unable to check for feed image existance")
+		appLog.DebugError(err, "Unable to check for feed image existance")
 		return err
 	}
 
@@ -49,14 +49,14 @@ func (f *FeedImage) Save() error {
 			VALUES (?, ?)
 		`)
 		if err != nil {
-			appLog.DebugError(err)
+			appLog.DebugError(err, err)
 			return err
 		}
 
 		stmt, err := database.Prepare(appDatabase.PrepareExecSQL(sql))
 
 		if err != nil {
-			appLog.DebugError("Unable to create the statement for feed image update")
+			appLog.DebugError(err, "Unable to create the statement for feed image update")
 			return err
 		}
 		defer appDatabase.DeferStmtCloseFct(stmt)()
@@ -67,7 +67,7 @@ func (f *FeedImage) Save() error {
 		)
 
 		if err != nil {
-			appLog.DebugError("An error occured while saving a feed image")
+			appLog.DebugError(err, "An error occured while saving a feed image")
 			return err
 		} else {
 			f.Id = appDatabase.PrimaryKey(newId)
@@ -85,14 +85,14 @@ func (f *FeedImage) Save() error {
 			WHERE id = ?
 		`)
 		if err != nil {
-			appLog.DebugError(err)
+			appLog.DebugError(err, err)
 			return err
 		}
 
 		stmt, err := database.Prepare(appDatabase.PrepareExecSQL(sql))
 
 		if err != nil {
-			appLog.DebugError("Unable to create the statement for feed image update")
+			appLog.DebugError(err, "Unable to create the statement for feed image update")
 			return err
 		}
 		defer appDatabase.DeferStmtCloseFct(stmt)()
@@ -104,7 +104,7 @@ func (f *FeedImage) Save() error {
 		)
 
 		if err != nil {
-			appLog.DebugError(fmt.Sprintf("An error occured while updating a feed image (%d)", f.Id))
+			appLog.DebugError(err, fmt.Sprintf("An error occured while updating a feed image (%d)", f.Id))
 			return err
 		} else {
 			return nil
@@ -123,24 +123,24 @@ func imageById(imageId appDatabase.PrimaryKey) (*FeedImage, error) {
 		WHERE id = ?
 	`)
 	if err != nil {
-		appLog.DebugError(err)
+		appLog.DebugError(err, err)
 		return nil, err
 	}
 
 	stmt, err := database.Prepare(sql)
 	if err != nil {
-		appLog.DebugError("Unable to prepare statement")
+		appLog.DebugError(err, "Unable to prepare statement")
 		return nil, err
 	}
 	defer appDatabase.DeferStmtCloseFct(stmt)()
 
 	rows, err := stmt.Query(imageId)
 	if err != nil {
-		appLog.DebugError("Unable to get result row")
+		appLog.DebugError(err, "Unable to get result row")
 		return nil, err
 	}
 	if rows.Err() != nil {
-		appLog.DebugError("Unable to get result row")
+		appLog.DebugError(err, "Unable to get result row")
 		return nil, rows.Err()
 	}
 	defer appDatabase.DeferRowsCloseFct(rows)()
@@ -150,7 +150,7 @@ func imageById(imageId appDatabase.PrimaryKey) (*FeedImage, error) {
 		v := new(FeedImage)
 		err = rows.Scan(&v.Id, &v.URL, &v.Title)
 		if err != nil {
-			appLog.DebugError("Unable to affect results")
+			appLog.DebugError(err, "Unable to affect results")
 			return nil, err
 		} else {
 			return v, nil
@@ -171,24 +171,24 @@ func imageByUrl(url string) (*FeedImage, error) {
 		WHERE url = ?
 	`)
 	if err != nil {
-		appLog.DebugError(err)
+		appLog.DebugError(err, err)
 		return nil, err
 	}
 
 	stmt, err := database.Prepare(sql)
 	if err != nil {
-		appLog.DebugError("Unable to prepare statement")
+		appLog.DebugError(err, "Unable to prepare statement")
 		return nil, err
 	}
 	defer appDatabase.DeferStmtCloseFct(stmt)()
 
 	rows, err := stmt.Query(url)
 	if err != nil {
-		appLog.DebugError("Unable to get result row")
+		appLog.DebugError(err, "Unable to get result row")
 		return nil, err
 	}
 	if rows.Err() != nil {
-		appLog.DebugError("Unable to get result row")
+		appLog.DebugError(err, "Unable to get result row")
 		return nil, rows.Err()
 	}
 	defer appDatabase.DeferRowsCloseFct(rows)()
@@ -198,7 +198,7 @@ func imageByUrl(url string) (*FeedImage, error) {
 		v := new(FeedImage)
 		err = rows.Scan(&v.Id, &v.URL, &v.Title)
 		if err != nil {
-			appLog.DebugError("Unable to affect results")
+			appLog.DebugError(err, "Unable to affect results")
 			return nil, err
 		} else {
 			return v, nil

@@ -5,6 +5,7 @@ import (
 	"fmt"
 
 	appDatabase "github.com/dademo/rssreader/modules/database"
+	appLog "github.com/dademo/rssreader/modules/log"
 
 	log "github.com/sirupsen/logrus"
 )
@@ -115,7 +116,7 @@ func databaseFeedModuleCreator(connection *sql.Tx) error {
 
 		_, err = connection.Exec(sql)
 		if err != nil {
-			log.Error("Unable to create feed tables")
+			appLog.DebugError(err, "Unable to create feed tables")
 			return err
 		}
 	}

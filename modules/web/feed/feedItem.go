@@ -1,7 +1,6 @@
-package feeds
+package feed
 
 import (
-	"fmt"
 	"net/http"
 
 	appDatabase "github.com/dademo/rssreader/modules/database"
@@ -19,7 +18,7 @@ func getFeedItems(responseWriter http.ResponseWriter, request *http.Request) {
 	web.DisableClientCache(responseWriter)
 
 	if err := web.ParseArgs(&requestParameters, request); err != nil {
-		appLog.DebugError(fmt.Sprintf("An error occured when fetching parsing values (%s)", err))
+		appLog.DebugError(err, "An error occured when fetching parsing values")
 		web.AnswerError(err, http.StatusInternalServerError, responseWriter)
 		return
 	}
@@ -27,7 +26,7 @@ func getFeedItems(responseWriter http.ResponseWriter, request *http.Request) {
 	if requestParameters.FeedId != 0 {
 		feeds, err := dbfeed.GetFeedItems(requestParameters.FeedId)
 		if err != nil {
-			appLog.DebugError(fmt.Sprintf("An error occured when fetching values (%s)", err))
+			appLog.DebugError(err, "An error occured when fetching values")
 			web.AnswerError(err, http.StatusInternalServerError, responseWriter)
 			return
 		}
@@ -49,7 +48,7 @@ func filterFeedItems(responseWriter http.ResponseWriter, request *http.Request) 
 	web.DisableClientCache(responseWriter)
 
 	if err := web.ParseArgs(&requestParameters, request); err != nil {
-		appLog.DebugError(fmt.Sprintf("An error occured when fetching parsing values (%s)", err))
+		appLog.DebugError(err, "An error occured when fetching parsing values")
 		web.AnswerError(err, http.StatusInternalServerError, responseWriter)
 		return
 	}
@@ -57,7 +56,7 @@ func filterFeedItems(responseWriter http.ResponseWriter, request *http.Request) 
 	if requestParameters.FeedId != 0 {
 		feeds, err := dbfeed.GetFeedItems(requestParameters.FeedId)
 		if err != nil {
-			appLog.DebugError(fmt.Sprintf("An error occured when fetching values (%s)", err))
+			appLog.DebugError(err, "An error occured when fetching values")
 			web.AnswerError(err, http.StatusInternalServerError, responseWriter)
 			return
 		}

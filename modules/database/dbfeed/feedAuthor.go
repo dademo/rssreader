@@ -34,7 +34,7 @@ func (f *FeedAuthor) Save() error {
 
 		existing, err := feedAuthorByName(f.Name)
 		if err != nil {
-			appLog.DebugError("Unable to get author by name")
+			appLog.DebugError(err, "Unable to get author by name")
 			return err
 		}
 
@@ -50,14 +50,14 @@ func (f *FeedAuthor) Save() error {
 				VALUES (?, ?)
 			`)
 			if err != nil {
-				appLog.DebugError(err)
+				appLog.DebugError(err, err)
 				return err
 			}
 
 			stmt, err := database.Prepare(appDatabase.PrepareExecSQL(sql))
 
 			if err != nil {
-				appLog.DebugError("Unable to create the statement for feed author update")
+				appLog.DebugError(err, "Unable to create the statement for feed author update")
 				return err
 			}
 			defer appDatabase.DeferStmtCloseFct(stmt)()
@@ -68,7 +68,7 @@ func (f *FeedAuthor) Save() error {
 			)
 
 			if err != nil {
-				appLog.DebugError("An error occured while saving a feed author")
+				appLog.DebugError(err, "An error occured while saving a feed author")
 				return err
 			} else {
 				f.Id = appDatabase.PrimaryKey(newId)
@@ -87,14 +87,14 @@ func (f *FeedAuthor) Save() error {
 			WHERE id = ?
 		`)
 		if err != nil {
-			appLog.DebugError(err)
+			appLog.DebugError(err, err)
 			return err
 		}
 
 		stmt, err := database.Prepare(appDatabase.PrepareExecSQL(sql))
 
 		if err != nil {
-			appLog.DebugError("Unable to create the statement for feed author update")
+			appLog.DebugError(err, "Unable to create the statement for feed author update")
 			return err
 		}
 		defer appDatabase.DeferStmtCloseFct(stmt)()
@@ -106,7 +106,7 @@ func (f *FeedAuthor) Save() error {
 		)
 
 		if err != nil {
-			appLog.DebugError(fmt.Sprintf("An error occured while updating a feed author (%d)", f.Id))
+			appLog.DebugError(err, fmt.Sprintf("An error occured while updating a feed author (%d)", f.Id))
 			return err
 		} else {
 			return nil
@@ -125,24 +125,24 @@ func feedAuthorByName(name string) (*FeedAuthor, error) {
 		WHERE name = ?
 	`)
 	if err != nil {
-		appLog.DebugError(err)
+		appLog.DebugError(err, err)
 		return nil, err
 	}
 
 	stmt, err := database.Prepare(sql)
 	if err != nil {
-		appLog.DebugError("Unable to prepare statement")
+		appLog.DebugError(err, "Unable to prepare statement")
 		return nil, err
 	}
 	defer appDatabase.DeferStmtCloseFct(stmt)()
 
 	rows, err := stmt.Query(name)
 	if err != nil {
-		appLog.DebugError("Unable to get result row")
+		appLog.DebugError(err, "Unable to get result row")
 		return nil, err
 	}
 	if rows.Err() != nil {
-		appLog.DebugError("Unable to get result row")
+		appLog.DebugError(err, "Unable to get result row")
 		return nil, rows.Err()
 	}
 	defer appDatabase.DeferRowsCloseFct(rows)()
@@ -152,7 +152,7 @@ func feedAuthorByName(name string) (*FeedAuthor, error) {
 		v := new(FeedAuthor)
 		err = rows.Scan(&v.Id, &v.Name, &v.Email)
 		if err != nil {
-			appLog.DebugError("Unable to affect results")
+			appLog.DebugError(err, "Unable to affect results")
 			return nil, err
 		} else {
 			return v, nil
@@ -173,24 +173,24 @@ func authorById(authorId appDatabase.PrimaryKey) (*FeedAuthor, error) {
 		WHERE id = ?
 	`)
 	if err != nil {
-		appLog.DebugError(err)
+		appLog.DebugError(err, err)
 		return nil, err
 	}
 
 	stmt, err := database.Prepare(sql)
 	if err != nil {
-		appLog.DebugError("Unable to prepare statement")
+		appLog.DebugError(err, "Unable to prepare statement")
 		return nil, err
 	}
 	defer appDatabase.DeferStmtCloseFct(stmt)()
 
 	rows, err := stmt.Query(authorId)
 	if err != nil {
-		appLog.DebugError("Unable to get result row")
+		appLog.DebugError(err, "Unable to get result row")
 		return nil, err
 	}
 	if rows.Err() != nil {
-		appLog.DebugError("Unable to get result row")
+		appLog.DebugError(err, "Unable to get result row")
 		return nil, rows.Err()
 	}
 	defer appDatabase.DeferRowsCloseFct(rows)()
@@ -200,7 +200,7 @@ func authorById(authorId appDatabase.PrimaryKey) (*FeedAuthor, error) {
 		v := new(FeedAuthor)
 		err = rows.Scan(&v.Id, &v.Name, &v.Email)
 		if err != nil {
-			appLog.DebugError("Unable to affect results")
+			appLog.DebugError(err, "Unable to affect results")
 			return nil, err
 		} else {
 			return v, nil

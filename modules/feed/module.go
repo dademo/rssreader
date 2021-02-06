@@ -10,7 +10,7 @@ import (
 	log "github.com/sirupsen/logrus"
 )
 
-func FetchAll(config config.Config) ([]*databaseFeed.Feed, error) {
+func FetchAll(config *config.Config) ([]*databaseFeed.Feed, error) {
 
 	log.Debug("Fetching all feeds")
 
@@ -29,7 +29,7 @@ func FetchAll(config config.Config) ([]*databaseFeed.Feed, error) {
 	return feeds, nil
 }
 
-func Fetch(feedConfig config.Feed) (*databaseFeed.Feed, error) {
+func Fetch(feedConfig *config.Feed) (*databaseFeed.Feed, error) {
 
 	log.Debug(fmt.Sprintf("Fetching feed [%s]", feedConfig.Name))
 

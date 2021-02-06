@@ -26,27 +26,27 @@ func linkFeedCategoryToFeed(category *FeedCategory, feed *Feed) error {
 			AND id_feed = ?
 	`)
 	if err != nil {
-		appLog.DebugError(err)
+		appLog.DebugError(err, err)
 		return err
 	}
 
 	stmt, err := database.Prepare(sql)
 	if err != nil {
-		appLog.DebugError("Unable to prepare SELECT statement")
+		appLog.DebugError(err, "Unable to prepare SELECT statement")
 		return err
 	}
 	defer appDatabase.DeferStmtCloseFct(stmt)()
 
 	row := stmt.QueryRow(category.Id, feed.Id)
 	if row.Err() != nil {
-		appLog.DebugError("Unable to get result row")
+		appLog.DebugError(err, "Unable to get result row")
 		return err
 	}
 
 	var cnt int
 	err = row.Scan(&cnt)
 	if err != nil {
-		appLog.DebugError("Unable to affect results")
+		appLog.DebugError(err, "Unable to affect results")
 		return err
 	}
 
@@ -57,20 +57,20 @@ func linkFeedCategoryToFeed(category *FeedCategory, feed *Feed) error {
 			VALUES (?, ?)
 		`)
 		if err != nil {
-			appLog.DebugError(err)
+			appLog.DebugError(err, err)
 			return err
 		}
 
 		stmt, err = database.Prepare(sql)
 		if err != nil {
-			appLog.DebugError("Unable to prepare INSERT statement")
+			appLog.DebugError(err, "Unable to prepare INSERT statement")
 			return err
 		}
 		defer appDatabase.DeferStmtCloseFct(stmt)()
 
 		err := appDatabase.SqlExec(stmt, category.Id, feed.Id)
 		if err != nil {
-			appLog.DebugError("An error occured while saving a feed")
+			appLog.DebugError(err, "An error occured while saving a feed")
 			return err
 		}
 	}
@@ -96,27 +96,27 @@ func linkFeedCategoryToFeedItem(category *FeedCategory, item *FeedItem) error {
 			AND id_feed_item = ?
 	`)
 	if err != nil {
-		appLog.DebugError(err)
+		appLog.DebugError(err, err)
 		return err
 	}
 
 	stmt, err := database.Prepare(sql)
 	if err != nil {
-		appLog.DebugError("Unable to prepare SELECT statement")
+		appLog.DebugError(err, "Unable to prepare SELECT statement")
 		return err
 	}
 	defer appDatabase.DeferStmtCloseFct(stmt)()
 
 	row := stmt.QueryRow(category.Id, item.Id)
 	if row.Err() != nil {
-		appLog.DebugError("Unable to get result row")
+		appLog.DebugError(err, "Unable to get result row")
 		return err
 	}
 
 	var cnt int
 	err = row.Scan(&cnt)
 	if err != nil {
-		appLog.DebugError("Unable to affect results")
+		appLog.DebugError(err, "Unable to affect results")
 		return err
 	}
 
@@ -127,20 +127,20 @@ func linkFeedCategoryToFeedItem(category *FeedCategory, item *FeedItem) error {
 			VALUES (?, ?)
 		`)
 		if err != nil {
-			appLog.DebugError(err)
+			appLog.DebugError(err, err)
 			return err
 		}
 
 		stmt, err = database.Prepare(sql)
 		if err != nil {
-			appLog.DebugError("Unable to prepare INSERT statement")
+			appLog.DebugError(err, "Unable to prepare INSERT statement")
 			return err
 		}
 		defer appDatabase.DeferStmtCloseFct(stmt)()
 
 		err := appDatabase.SqlExec(stmt, category.Id, item.Id)
 		if err != nil {
-			appLog.DebugError("An error occured while saving a feed")
+			appLog.DebugError(err, "An error occured while saving a feed")
 			return err
 		}
 	}
@@ -166,27 +166,27 @@ func linkFeedEnclosureToFeedItem(enclosure *FeedEnclosure, item *FeedItem) error
 			AND id_feed_item = ?
 	`)
 	if err != nil {
-		appLog.DebugError(err)
+		appLog.DebugError(err, err)
 		return err
 	}
 
 	stmt, err := database.Prepare(sql)
 	if err != nil {
-		appLog.DebugError("Unable to prepare SELECT statement")
+		appLog.DebugError(err, "Unable to prepare SELECT statement")
 		return err
 	}
 	defer appDatabase.DeferStmtCloseFct(stmt)()
 
 	row := stmt.QueryRow(enclosure.Id, item.Id)
 	if row.Err() != nil {
-		appLog.DebugError("Unable to get result row")
+		appLog.DebugError(err, "Unable to get result row")
 		return err
 	}
 
 	var cnt int
 	err = row.Scan(&cnt)
 	if err != nil {
-		appLog.DebugError("Unable to affect results")
+		appLog.DebugError(err, "Unable to affect results")
 		return err
 	}
 
@@ -197,20 +197,20 @@ func linkFeedEnclosureToFeedItem(enclosure *FeedEnclosure, item *FeedItem) error
 			VALUES (?, ?)
 		`)
 		if err != nil {
-			appLog.DebugError(err)
+			appLog.DebugError(err, err)
 			return err
 		}
 
 		stmt, err = database.Prepare(sql)
 		if err != nil {
-			appLog.DebugError("Unable to prepare INSERT statement")
+			appLog.DebugError(err, "Unable to prepare INSERT statement")
 			return err
 		}
 		defer appDatabase.DeferStmtCloseFct(stmt)()
 
 		err := appDatabase.SqlExec(stmt, enclosure.Id, item.Id)
 		if err != nil {
-			appLog.DebugError("An error occured while saving a feed")
+			appLog.DebugError(err, "An error occured while saving a feed")
 			return err
 		}
 	}

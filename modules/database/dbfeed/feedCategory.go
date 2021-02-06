@@ -38,7 +38,7 @@ func (f *FeedCategory) Save() error {
 
 		existing, err := feedCategoryByCategory(f.Category)
 		if err != nil {
-			appLog.DebugError("Unable to get category by name")
+			appLog.DebugError(err, "Unable to get category by name")
 			return err
 		}
 
@@ -54,14 +54,14 @@ func (f *FeedCategory) Save() error {
 				VALUES (?)
 			`)
 			if err != nil {
-				appLog.DebugError(err)
+				appLog.DebugError(err, err)
 				return err
 			}
 
 			stmt, err := database.Prepare(appDatabase.PrepareExecSQL(sql))
 
 			if err != nil {
-				appLog.DebugError("Unable to create the statement for feed category update")
+				appLog.DebugError(err, "Unable to create the statement for feed category update")
 				return err
 			}
 			defer appDatabase.DeferStmtCloseFct(stmt)()
@@ -71,7 +71,7 @@ func (f *FeedCategory) Save() error {
 			)
 
 			if err != nil {
-				appLog.DebugError("An error occured while saving a feed category")
+				appLog.DebugError(err, "An error occured while saving a feed category")
 				return err
 			} else {
 				f.Id = appDatabase.PrimaryKey(newId)
@@ -89,14 +89,14 @@ func (f *FeedCategory) Save() error {
 			WHERE id = ?
 		`)
 		if err != nil {
-			appLog.DebugError(err)
+			appLog.DebugError(err, err)
 			return err
 		}
 
 		stmt, err := database.Prepare(appDatabase.PrepareExecSQL(sql))
 
 		if err != nil {
-			appLog.DebugError("Unable to create the statement for feed category update")
+			appLog.DebugError(err, "Unable to create the statement for feed category update")
 			return err
 		}
 		defer appDatabase.DeferStmtCloseFct(stmt)()
@@ -107,7 +107,7 @@ func (f *FeedCategory) Save() error {
 		)
 
 		if err != nil {
-			appLog.DebugError(fmt.Sprintf("An error occured while updating a feed category (%d)", f.Id))
+			appLog.DebugError(err, fmt.Sprintf("An error occured while updating a feed category (%d)", f.Id))
 			return err
 		} else {
 			return nil
@@ -125,13 +125,13 @@ func feedCategoryByCategory(category string) (*FeedCategory, error) {
 		WHERE category = ?
 	`)
 	if err != nil {
-		appLog.DebugError(err)
+		appLog.DebugError(err, err)
 		return nil, err
 	}
 
 	stmt, err := database.Prepare(sql)
 	if err != nil {
-		appLog.DebugError("Unable to prepare statement")
+		appLog.DebugError(err, "Unable to prepare statement")
 		return nil, err
 	}
 	defer appDatabase.DeferStmtCloseFct(stmt)()
@@ -140,11 +140,11 @@ func feedCategoryByCategory(category string) (*FeedCategory, error) {
 
 	rows, err := stmt.Query(category)
 	if err != nil {
-		appLog.DebugError("Unable to get result row")
+		appLog.DebugError(err, "Unable to get result row")
 		return nil, err
 	}
 	if rows.Err() != nil {
-		appLog.DebugError("Unable to get result row")
+		appLog.DebugError(err, "Unable to get result row")
 		return nil, rows.Err()
 	}
 	defer appDatabase.DeferRowsCloseFct(rows)()
@@ -152,7 +152,7 @@ func feedCategoryByCategory(category string) (*FeedCategory, error) {
 	if rows.Next() {
 		err = rows.Scan(&v.Id, &v.Category)
 		if err != nil {
-			appLog.DebugError("Unable to affect results")
+			appLog.DebugError(err, "Unable to affect results")
 			return nil, err
 		} else {
 			return v, nil
@@ -174,24 +174,24 @@ func categoriesOfFeedItem(feedItem *FeedItem) ([]*FeedCategory, error) {
 		WHERE id_feed_item = ?
 	`)
 	if err != nil {
-		appLog.DebugError(err)
+		appLog.DebugError(err, err)
 		return nil, err
 	}
 
 	stmt, err := database.Prepare(sql)
 	if err != nil {
-		appLog.DebugError("Unable to prepare statement")
+		appLog.DebugError(err, "Unable to prepare statement")
 		return nil, err
 	}
 	defer appDatabase.DeferStmtCloseFct(stmt)()
 
 	rows, err := stmt.Query(feedItem.Id)
 	if err != nil {
-		appLog.DebugError("Unable to get result row")
+		appLog.DebugError(err, "Unable to get result row")
 		return nil, err
 	}
 	if rows.Err() != nil {
-		appLog.DebugError("Unable to get result row")
+		appLog.DebugError(err, "Unable to get result row")
 		return nil, rows.Err()
 	}
 	defer appDatabase.DeferRowsCloseFct(rows)()
@@ -202,7 +202,7 @@ func categoriesOfFeedItem(feedItem *FeedItem) ([]*FeedCategory, error) {
 		v := new(FeedCategory)
 		err = rows.Scan(&v.Id, &v.Category)
 		if err != nil {
-			appLog.DebugError("Unable to affect results")
+			appLog.DebugError(err, "Unable to affect results")
 			return nil, err
 		} else {
 			allValues = append(allValues, v)
@@ -223,24 +223,24 @@ func categoriesOfFeed(feed *Feed) ([]*FeedCategory, error) {
 		WHERE id_feed = ?
 	`)
 	if err != nil {
-		appLog.DebugError(err)
+		appLog.DebugError(err, err)
 		return nil, err
 	}
 
 	stmt, err := database.Prepare(sql)
 	if err != nil {
-		appLog.DebugError("Unable to prepare statement")
+		appLog.DebugError(err, "Unable to prepare statement")
 		return nil, err
 	}
 	defer appDatabase.DeferStmtCloseFct(stmt)()
 
 	rows, err := stmt.Query(feed.Id)
 	if err != nil {
-		appLog.DebugError("Unable to get result row")
+		appLog.DebugError(err, "Unable to get result row")
 		return nil, err
 	}
 	if rows.Err() != nil {
-		appLog.DebugError("Unable to get result row")
+		appLog.DebugError(err, "Unable to get result row")
 		return nil, rows.Err()
 	}
 	defer appDatabase.DeferRowsCloseFct(rows)()
@@ -251,7 +251,7 @@ func categoriesOfFeed(feed *Feed) ([]*FeedCategory, error) {
 		v := new(FeedCategory)
 		err = rows.Scan(&v.Id, &v.Category)
 		if err != nil {
-			appLog.DebugError("Unable to affect results")
+			appLog.DebugError(err, "Unable to affect results")
 			return nil, err
 		} else {
 			allValues = append(allValues, v)
