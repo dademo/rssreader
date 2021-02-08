@@ -1,6 +1,7 @@
-package hooks
+package hook
 
 import (
+	"strings"
 	"time"
 
 	"github.com/dademo/rssreader/modules/config"
@@ -10,6 +11,15 @@ import (
 
 	// Pre-built hooks
 	"github.com/Abramovic/logrus_influxdb"
+)
+
+var enabledBackends = []string{}
+
+const (
+	BackendNameElasticsearch = "elasticsearch"
+	BackendNameInfluxDB      = "influxdb"
+	BackendNameMongoDB       = "mongodb"
+	BackendNameBuntDB        = "buntdb"
 )
 
 func RegisterHooks(logBackendsConfig *config.LogBackendsDefinition) (err error) {
@@ -48,7 +58,7 @@ func RegisterHooks(logBackendsConfig *config.LogBackendsDefinition) (err error) 
 		}
 	}
 
-	logrus.Debug("Log hooks registered")
+	logrus.Debug("Log hook.registered")
 
 	return nil
 }
@@ -67,7 +77,7 @@ func RegisterElasticsearchHook(config *config.ElasticsearchLogBackendConfig) err
 		return err
 	}
 
-	logrus.AddHook(hook)
+	addHook(BackendNameElasticsearch, hook)
 	return nil
 }
 
@@ -98,7 +108,7 @@ func RegisterInfluxDBHook(config *config.InfluxDBLogBackendConfig) error {
 		return err
 	}
 
-	logrus.AddHook(hook)
+	addHook(BackendNameInfluxDB, hook)
 	return nil
 }
 
@@ -117,7 +127,7 @@ func RegisterMongoDBHook(config *config.MongoDBLogBackendConfig) error {
 	logDatabase := mongoClient.Database(config.Database)
 	logCollection := logDatabase.Collection(config.Collection)
 
-	logrus.AddHook(MongoDBLogHook{
+	addHook(BackendNameMongoDB, MongoDBLogHook{
 		config:        config,
 		logCollection: logCollection,
 		levels:        logLevels,
@@ -139,12 +149,21 @@ func RegisterBuntDBHook(config *config.BuntDBLogBackendConfig) error {
 		return err
 	}
 
-	logrus.AddHook(BuntDBLogHook{
+	addHook(BackendNameBuntDB, BuntDBLogHook{
 		config: config,
 		db:     client,
 		levels: logLevels,
 	})
 	return nil
+}
+
+func GetEnabledBackends() []string {
+	return enabledBackends
+}
+
+func addHook(backendName string, hook logrus.Hook) {
+	logrus.AddHook(hook)
+	enabledBackends = append(enabledBackends, strings.ToLower(backendName))
 }
 
 func getLevelsGreaterThan(levelStr string) ([]logrus.Level, error) {

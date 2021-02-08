@@ -110,7 +110,7 @@ func serve(cliContext *cli.Context) error {
 
 	}()
 
-	log.Debug("Serving http")
+	log.Debug(fmt.Sprintf("Serving on %s", appConfig.HttpConfig.ListenAddress))
 	if err = srv.ListenAndServe(); err != http.ErrServerClosed {
 		quit <- 0
 		return err

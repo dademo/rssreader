@@ -5,7 +5,7 @@ import (
 
 	"github.com/dademo/rssreader/modules/config"
 	"github.com/dademo/rssreader/modules/log"
-	logHooks "github.com/dademo/rssreader/modules/log/hooks"
+	logHooks "github.com/dademo/rssreader/modules/log/hook"
 
 	"github.com/sirupsen/logrus"
 	"github.com/urfave/cli"

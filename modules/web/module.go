@@ -74,7 +74,7 @@ func RegisterServerHandlers(serveMux *http.ServeMux, httpConfig *config.HttpConf
 	}
 
 	router.PathPrefix("/").Handler(http.FileServer(dotFileHidingFileSystem{http.Dir(fileServerDir)}))
-	serveMux.Handle("/", router)
+	serveMux.Handle("/", HttpLogInterceptorFor(router))
 
 	return nil
 }
