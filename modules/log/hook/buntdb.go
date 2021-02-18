@@ -30,6 +30,8 @@ type BuntDBLogEntry struct {
 
 var buntDBClient *buntdb.DB
 
+const IndexBuntDB = "log"
+
 func connectBuntDB(config *config.BuntDBLogBackendConfig) (*buntdb.DB, error) {
 
 	db, err := buntdb.Open(config.File)
@@ -46,6 +48,8 @@ func connectBuntDB(config *config.BuntDBLogBackendConfig) (*buntdb.DB, error) {
 	})
 
 	buntDBClient = db
+
+	db.CreateIndex(IndexBuntDB, "log:*", buntdb.IndexString)
 
 	return db, nil
 }
@@ -82,8 +86,8 @@ func makeBuntKey(entry *logrus.Entry) string {
 	var file string
 	var function string
 	if entry.HasCaller() {
-		file = entry.Caller.File
-		function = entry.Caller.Function
+		file = strings.ReplaceAll(entry.Caller.File, ":", "_")
+		function = strings.ReplaceAll(entry.Caller.Function, ":", "_")
 	} else {
 		file = "-"
 		function = "-"

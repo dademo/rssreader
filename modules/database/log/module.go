@@ -2,6 +2,7 @@ package log
 
 import (
 	"fmt"
+	"regexp"
 	"strings"
 	"time"
 
@@ -33,6 +34,9 @@ type LogQueryOpts struct {
 	File           string
 	FileComparator database.StringComparator
 
+	Function           string
+	FunctionComparator database.StringComparator
+
 	MatchingDataKeys map[string]interface{}
 
 	// Specials
@@ -40,20 +44,21 @@ type LogQueryOpts struct {
 }
 
 type LogEntriesPage struct {
-	Entries []LogEntry
+	Entries []*LogEntry
 
 	PageNo   uint
 	PageSize uint
 
 	TotalElements uint
-	TotalPages    uint
 }
 
 type LogEntry struct {
-	timestamp time.Time
-	message   string
-	data      *map[string]interface{}
-	level     string
+	Timestamp time.Time
+	Level     string
+	File      string
+	Function  string
+	Message   string
+	Data      map[string]interface{}
 }
 
 type LogBackend interface {
@@ -67,4 +72,36 @@ func GetLogBackendFromString(backendName string) (LogBackend, error) {
 	} else {
 		return nil, fmt.Errorf("Unable to locate backend named [%s]", backendName)
 	}
+}
+
+func compare(compareValue int64, comparator database.Comparator) bool {
+
+	switch comparator {
+	case database.ComparatorGreaterEqualThan:
+	default:
+		return compareValue >= 0
+	case database.ComparatorGreaterThan:
+		return compareValue > 0
+	case database.ComparatorEquals:
+		return compareValue == 0
+	case database.ComparatorLowerThan:
+		return compareValue < 0
+	case database.ComparatorLowerEqualThan:
+		return compareValue <= 0
+	}
+	return true
+}
+
+func compareStr(value string, compareTo string, comparator database.StringComparator) (bool, error) {
+
+	switch comparator {
+	default:
+	case database.StrComparatorEquals:
+		return value == compareTo, nil
+	case database.StrComparatorContains:
+		return strings.Contains(value, compareTo), nil
+	case database.StrComparatorMatches:
+		return regexp.MatchString(compareTo, value)
+	}
+	return false, nil
 }

@@ -33,6 +33,9 @@ type getLogsParameters struct {
 	File           string `httpParameter:"file" httpParameterDefaultValue:""`
 	FileComparator string `httpParameter:"fileCompare" httpParameterDefaultValue:"CONTAINS"`
 
+	Function           string `httpParameter:"function" httpParameterDefaultValue:""`
+	FunctionComparator string `httpParameter:"functionCompare" httpParameterDefaultValue:"CONTAINS"`
+
 	MatchingDataKeys string `httpParameter:"matchingDataKeys" httpParameterDefaultValue:""`
 
 	ScrollID string `httpParameter:"scrollId" httpParameterDefaultValue:""`
@@ -116,6 +119,11 @@ func parseDocumentToQuery(requestParameters *getLogsParameters) (*dbLog.LogQuery
 		return nil, err
 	}
 
+	functionComparator, err := database.ParseStringComparator(requestParameters.FunctionComparator)
+	if err != nil {
+		return nil, err
+	}
+
 	matchingDataKeys, err := parseMatchingDataKeys(requestParameters.MatchingDataKeys)
 	if err != nil {
 		return nil, err
@@ -138,6 +146,9 @@ func parseDocumentToQuery(requestParameters *getLogsParameters) (*dbLog.LogQuery
 
 		File:           requestParameters.File,
 		FileComparator: fileComparator,
+
+		Function:           requestParameters.Function,
+		FunctionComparator: functionComparator,
 
 		MatchingDataKeys: matchingDataKeys,
 		ScrollID:         requestParameters.ScrollID,
