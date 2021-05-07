@@ -52,13 +52,15 @@ type LogEntriesPage struct {
 	TotalElements uint
 }
 
+type LogDataEnties = map[string]interface{}
+
 type LogEntry struct {
 	Timestamp time.Time
 	Level     string
 	File      string
 	Function  string
 	Message   string
-	Data      map[string]interface{}
+	Data      LogDataEnties
 }
 
 type LogBackend interface {

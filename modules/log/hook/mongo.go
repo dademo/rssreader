@@ -32,6 +32,7 @@ type MongoDBLogEntry struct {
 }
 
 var mongoDBClient *mongo.Client
+var mongoDBConfig *config.MongoDBLogBackendConfig
 
 func connectMongo(config *config.MongoDBLogBackendConfig) (*mongo.Client, error) {
 
@@ -65,6 +66,7 @@ func connectMongo(config *config.MongoDBLogBackendConfig) (*mongo.Client, error)
 	})
 
 	mongoDBClient = client
+	mongoDBConfig = config
 
 	return client, nil
 }
@@ -73,6 +75,7 @@ func (hook MongoDBLogHook) Fire(entry *logrus.Entry) error {
 
 	var file string
 	var function string
+
 	if entry.HasCaller() {
 		file = entry.Caller.File
 		function = entry.Caller.Function
@@ -108,4 +111,8 @@ func (hook MongoDBLogHook) Levels() []logrus.Level {
 
 func GetMongoDBClient() *mongo.Client {
 	return mongoDBClient
+}
+
+func GetMongoDBConfig() *config.MongoDBLogBackendConfig {
+	return mongoDBConfig
 }
