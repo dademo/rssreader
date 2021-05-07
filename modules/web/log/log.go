@@ -18,7 +18,7 @@ type getLogsParameters struct {
 	Backend string `httpParameter:"backend" httpParameterDefaultValue:"buntdb"`
 
 	PageNo   uint   `httpParameter:"pageNo" httpParameterDefaultValue:"0"`
-	PageSize uint   `httpParameter:"pageSize" httpParameterDefaultValue:"0"`
+	PageSize uint   `httpParameter:"pageSize" httpParameterDefaultValue:"50"`
 	Sort     string `httpParameter:"sort" httpParameterDefaultValue:""`
 
 	Level           string `httpParameter:"level" httpParameterDefaultValue:"info"`

@@ -77,8 +77,9 @@ func GetLogBackendFromString(backendName string) (LogBackend, error) {
 func compare(compareValue int64, comparator database.Comparator) bool {
 
 	switch comparator {
-	case database.ComparatorGreaterEqualThan:
 	default:
+		fallthrough
+	case database.ComparatorGreaterEqualThan:
 		return compareValue >= 0
 	case database.ComparatorGreaterThan:
 		return compareValue > 0
@@ -89,13 +90,13 @@ func compare(compareValue int64, comparator database.Comparator) bool {
 	case database.ComparatorLowerEqualThan:
 		return compareValue <= 0
 	}
-	return true
 }
 
 func compareStr(value string, compareTo string, comparator database.StringComparator) (bool, error) {
 
 	switch comparator {
 	default:
+		fallthrough
 	case database.StrComparatorEquals:
 		return value == compareTo, nil
 	case database.StrComparatorContains:
@@ -103,5 +104,4 @@ func compareStr(value string, compareTo string, comparator database.StringCompar
 	case database.StrComparatorMatches:
 		return regexp.MatchString(compareTo, value)
 	}
-	return false, nil
 }

@@ -3,6 +3,7 @@ package log
 import (
 	"encoding/json"
 	"errors"
+	"fmt"
 	"regexp"
 	"strconv"
 	"time"
@@ -20,7 +21,6 @@ type buntDBBackendDefinition struct {
 type buntDbComparator struct {
 	keyComparator *regexp.Regexp
 	query         *LogQueryOpts
-	logLevel      logrus.Level
 }
 
 func buntDBLogBackend() (LogBackend, error) {
@@ -66,36 +66,43 @@ func (backendDefinition *buntDBBackendDefinition) QueryForLogs(query *LogQueryOp
 		ascendError := tx.Ascend(hook.IndexBuntDB, func(key string, value string) bool {
 
 			var logEntry LogEntry
+			var keyMatches bool
 
-			if comparator.compareEntryKey(key) {
+			keyMatches, internalError = comparator.compareEntryKey(key)
 
-				// First pages we want to skip
-				if it < query.Page.PageNo*query.Page.PageSize {
-					it++
-					return true
+			if internalError != nil {
+				return false
+			}
+
+			if keyMatches {
+
+				// We only generate wanted page
+				if it >= query.Page.PageNo*query.Page.PageSize &&
+					it < (query.Page.PageNo+1)*query.Page.PageSize {
+
+					var buntDBLogEntry hook.BuntDBLogEntry
+
+					internalError = json.Unmarshal([]byte(value), &buntDBLogEntry)
+
+					if internalError != nil {
+						return false
+					}
+
+					logEntry.Timestamp = time.Unix(0, buntDBLogEntry.Timestamp)
+					logEntry.Level = buntDBLogEntry.Level
+					logEntry.Message = buntDBLogEntry.Message
+					logEntry.File = buntDBLogEntry.File
+					logEntry.Function = buntDBLogEntry.Function
+					logEntry.Timestamp = time.Unix(0, buntDBLogEntry.Timestamp)
+					logEntry.Data = buntDBLogEntry.Data
+
+					pageResult.Entries = append(pageResult.Entries, &logEntry)
+					pageResult.PageSize++
 				}
-
-				var buntDBLogEntry hook.BuntDBLogEntry
-
-				internalError = json.Unmarshal([]byte(value), &buntDBLogEntry)
-
-				if internalError != nil {
-					return false
-				}
-
-				logEntry.Timestamp = time.Unix(0, buntDBLogEntry.Timestamp)
-				logEntry.Level = buntDBLogEntry.Level
-				logEntry.Message = buntDBLogEntry.Message
-				logEntry.File = buntDBLogEntry.File
-				logEntry.Function = buntDBLogEntry.Function
-				logEntry.Timestamp = time.Unix(0, buntDBLogEntry.Timestamp)
-				logEntry.Data = buntDBLogEntry.Data
-
-				pageResult.Entries = append(pageResult.Entries, &logEntry)
 				it++
-				pageResult.PageSize++
+				pageResult.TotalElements++
 
-				return it <= (query.Page.PageNo+1)*query.Page.PageSize
+				return true
 			}
 			return true
 		})
@@ -116,57 +123,51 @@ func (backendDefinition *buntDBBackendDefinition) QueryForLogs(query *LogQueryOp
 	return pageResult, nil
 }
 
-func (comparator *buntDbComparator) compareEntryKey(key string) bool {
+func (comparator *buntDbComparator) compareEntryKey(key string) (bool, error) {
 
 	keyItems := comparator.keyComparator.FindStringSubmatch(key)
 
 	if keyItems == nil {
-		//log.Debug(fmt.Sprintf("Not match for key [%s]", key))
-		return false
+		return false, fmt.Errorf("Not match for key [%s]", key)
 	}
 	if len(keyItems) != 5 {
-		//log.Debug(fmt.Sprintf("Unable to fetch keys from key, expected 5, got %d [%s]", len(keyItems), key))
-		return false
+		return false, fmt.Errorf("Unable to fetch keys from key, expected 5, got %d [%s]", len(keyItems), key)
 	}
 
 	timestamp, err := strconv.ParseInt(keyItems[1], 10, 0)
 	if err != nil {
-		log.DebugError(err, "Unable to parse timestamp")
-		return false
+		return false, errors.New("Unable to parse timestamp")
 	}
 
 	if !comparator.compareTimestamp(time.Unix(0, timestamp)) {
-		return false
+		return false, nil
 	}
 
 	match, err := comparator.compareLogLevel(keyItems[2])
 	if err != nil {
-		log.DebugError(err, "Unable to compare log level")
-		return false
+		return false, fmt.Errorf("Unable to compare log level, %s", err)
 	}
 	if !match {
-		return false
+		return false, nil
 	}
 
 	match, err = comparator.compareFile(keyItems[3])
 	if err != nil {
-		log.DebugError(err, "Unable to compare file")
-		return false
+		return false, errors.New("Unable to compare file")
 	}
 	if !match {
-		return false
+		return false, nil
 	}
 
 	match, err = comparator.compareFunction(keyItems[4])
 	if err != nil {
-		log.DebugError(err, "Unable to compare function")
-		return false
+		return false, errors.New("Unable to compare function")
 	}
 	if !match {
-		return false
+		return false, nil
 	}
 
-	return true
+	return true, nil
 }
 
 func (comparator *buntDbComparator) compareTimestamp(timestamp time.Time) bool {
@@ -180,16 +181,21 @@ func (comparator *buntDbComparator) compareTimestamp(timestamp time.Time) bool {
 	return true
 }
 
-func (comparator *buntDbComparator) compareLogLevel(logLevel string) (bool, error) {
+func (comparator *buntDbComparator) compareLogLevel(keyLogLevelStr string) (bool, error) {
 
 	// Levels are set from the less to the most precise
-	level, err := logrus.ParseLevel(logLevel)
+	keyLogLevel, err := logrus.ParseLevel(keyLogLevelStr)
+	if err != nil {
+		return false, err
+	}
+
+	queryLogLevel, err := logrus.ParseLevel(comparator.query.Level)
 	if err != nil {
 		return false, err
 	}
 
 	return compare(
-		int64(level-comparator.logLevel),
+		int64(queryLogLevel)-int64(keyLogLevel),
 		comparator.query.LevelComparator,
 	), nil
 }
